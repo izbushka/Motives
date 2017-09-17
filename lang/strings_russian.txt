@@ -53,3 +53,17 @@ $s_plugin_Motives_disabled = 'Выкл';
 $s_plugin_Motives_bonus_edited = 'Bonus/Fines edited';
 $s_plugin_Motives_total_bonuses_user = 'Сумма бонусов по пользователю / проекту / категории';
 $s_plugin_Motives_total_fines_user = 'Сумма штрафов по пользователю / проекту / категории';
+
+
+$s_plugin_Motives_add_new_department = 'Добавить новый отдел';
+$s_plugin_Motives_department_members = 'Сотрудники отдела';
+$s_plugin_Motives_department_name = 'Название отдела';
+$s_plugin_Motives_department = 'Отдел';
+$s_plugin_Motives_departments = 'Отделы';
+$s_plugin_Motives_created = 'Дата создания';
+$s_plugin_Motives_updated = 'Дата изменения';
+$s_plugin_Motives_delete = 'Удалить';
+$s_plugin_Motives_edit = 'Изменить';
+$s_plugin_Motives_save = 'Сохранить';
+$s_plugin_Motives_cancel = 'Отменить';
+$s_plugin_Motives_actions = 'Действия';
