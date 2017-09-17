@@ -241,6 +241,19 @@ class MotivesPlugin extends MantisPlugin
 				user_id			I		NOTNULL UNSIGNED,
 				timestamp		I		UNSIGNED,
 				amount			I		NOTNULL
+				" ) ),
+			array( 'CreateTableSQL', array( plugin_table( 'departments' ), "
+				id              I       NOTNULL UNSIGNED AUTOINCREMENT PRIMARY,
+				name			C(250)	NOTNULL DEFAULT \" '' \",
+				created_at		T		NOTNULL,
+				updated_at		T		NOTNULL
+				" ) ),
+			array( 'CreateTableSQL', array( plugin_table( 'user_departments' ), "
+				user_id         I       NOTNULL UNSIGNED,
+				department_id   I       NOTNULL UNSIGNED,
+				role			C(6)	NOTNULL DEFAULT \" 'worker' \",
+				created_at		T		NOTNULL,
+				updated_at		T		NOTNULL
 				" ) )
 
 		);

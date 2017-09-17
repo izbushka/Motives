@@ -1,8 +1,8 @@
 <?php
 
-function motives_add( $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount ) {
-	$t_update_table = plugin_table( 'bonus', 'Motives' );
-	$t_query        = "INSERT INTO $t_update_table (
+function motives_add($p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount) {
+    $t_update_table = plugin_table('bonus', 'Motives');
+    $t_query = "INSERT INTO $t_update_table (
 					bug_id,
 					bugnote_id,
 					reporter_id,
@@ -16,83 +16,83 @@ function motives_add( $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_a
 					' . db_param() . ',
 					' . db_param() . ',
 					' . db_param() . ' )';
-	db_query( $t_query, array(
-		$p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, date("Y-m-d G:i:s"), $p_amount
-	) );
+    db_query($t_query, array(
+        $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, date("Y-m-d G:i:s"), $p_amount,
+    ));
 }
 
-function motives_update( $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount ) {
-	$t_update_table = plugin_table( 'bonus', 'Motives' );
-	$t_query        = "DELETE FROM $t_update_table WHERE bugnote_id =" . db_param();
-	db_query( $t_query, array( $p_bugnote_id ) );
-	motives_add( $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount );
+function motives_update($p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount) {
+    $t_update_table = plugin_table('bonus', 'Motives');
+    $t_query = "DELETE FROM $t_update_table WHERE bugnote_id =" . db_param();
+    db_query($t_query, array($p_bugnote_id));
+    motives_add($p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount);
 }
 
-function motives_delete( $p_bugnote_id ) {
-	# Remove the bugnote
-	db_param_push();
-	$t_update_table = plugin_table( 'bonus', 'Motives' );
-	$t_query = "DELETE FROM $t_update_table WHERE bugnote_id=" . db_param();
-	db_query( $t_query, array( $p_bugnote_id ) );
+function motives_delete($p_bugnote_id) {
+    # Remove the bugnote
+    db_param_push();
+    $t_update_table = plugin_table('bonus', 'Motives');
+    $t_query = "DELETE FROM $t_update_table WHERE bugnote_id=" . db_param();
+    db_query($t_query, array($p_bugnote_id));
 }
 
-function motives_get( $p_bugnote_id ) {
-	$t_update_table = plugin_table( 'bonus', 'Motives' );
-	$t_query        = "SELECT * FROM $t_update_table WHERE bugnote_id=" . db_param();
-	$t_result       = db_query( $t_query, array( $p_bugnote_id ) );
+function motives_get($p_bugnote_id) {
+    $t_update_table = plugin_table('bonus', 'Motives');
+    $t_query = "SELECT * FROM $t_update_table WHERE bugnote_id=" . db_param();
+    $t_result = db_query($t_query, array($p_bugnote_id));
 
-	if ( db_num_rows( $t_result ) < 1 ) {
-		return null;
-	}
+    if (db_num_rows($t_result) < 1) {
+        return null;
+    }
 
-	if ( $t_row = db_fetch_array( $t_result ) ) {
-		return $t_row;
-	} else {
-		return null;
-	}
+    if ($t_row = db_fetch_array($t_result)) {
+        return $t_row;
+    } else {
+        return null;
+    }
 }
 
-function motives_get_by_bug( $p_bug_id ) {
-	$t_update_table = plugin_table( 'bonus', 'Motives' );
-	$t_query        = "SELECT * FROM $t_update_table WHERE bug_id=" . db_param();
-	$t_result       = db_query( $t_query, array( $p_bug_id ) );
+function motives_get_by_bug($p_bug_id) {
+    $t_update_table = plugin_table('bonus', 'Motives');
+    $t_query = "SELECT * FROM $t_update_table WHERE bug_id=" . db_param();
+    $t_result = db_query($t_query, array($p_bug_id));
 
-	if ( db_num_rows( $t_result ) < 1 ) {
-		return null;
-	}
-	$t_rows = array();
-	while ( $t_row = db_fetch_array( $t_result ) ) {
-		$t_rows[] = $t_row;
-	}
-	return $t_rows;
+    if (db_num_rows($t_result) < 1) {
+        return null;
+    }
+    $t_rows = array();
+    while ($t_row = db_fetch_array($t_result)) {
+        $t_rows[] = $t_row;
+    }
+    return $t_rows;
 }
 
 /**
  * Get latest bug notes for period
- * @param int    $p_project_id Project id
- * @param string $p_date_from  Start date
- * @param string $p_date_to    End date
- * @param int    $p_user_id    Filter only this user bug notes
- * @param int    $p_limit      Bug notes limit
+ * @param int $p_project_id Project id
+ * @param string $p_date_from Start date
+ * @param string $p_date_to End date
+ * @param int $p_user_id Filter only this user bug notes
+ * @param int $p_limit Bug notes limit
  * @return array
  */
-function motives_get_latest_bugnotes( $p_project_id, $p_date_from, $p_date_to, $p_user_id = null, $p_bonus_user_id, $p_category_id, $p_limit = 500 ) {
-	$c_from          = strtotime( $p_date_from );
-	$c_to            = strtotime( $p_date_to ) + SECONDS_PER_DAY - 1;
-	$c_user_id       = empty( $p_user_id ) ? 0 : intval( $p_user_id, 10 );
-	$c_bonus_user_id = empty( $p_bonus_user_id ) ? 0 : intval( $p_bonus_user_id, 10 );
-	$c_category_id   = empty( $p_category_id ) || $p_category_id == -1 ? 0 : intval( $p_category_id, 10 );
+function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p_user_id = null, $p_bonus_user_id, $p_category_id, $p_limit = 500) {
+    $c_from = strtotime($p_date_from);
+    $c_to = strtotime($p_date_to) + SECONDS_PER_DAY - 1;
+    $c_user_id = empty($p_user_id) ? 0 : intval($p_user_id, 10);
+    $c_bonus_user_id = empty($p_bonus_user_id) ? 0 : intval($p_bonus_user_id, 10);
+    $c_category_id = empty($p_category_id) || $p_category_id == -1 ? 0 : intval($p_category_id, 10);
 
-	if ( $c_to === false || $c_from === false ) {
-		error_parameters( array( $p_date_from, $p_date_to ) );
-		trigger_error( ERROR_GENERIC, ERROR );
-	}
-	$t_bug_table          = db_get_table( 'mantis_bug_table' );
-	$t_bugnote_table      = db_get_table( 'mantis_bugnote_table' );
-	$t_bugnote_text_table = db_get_table( 'mantis_bugnote_text_table' );
-	$t_bonus_table        = plugin_table( 'bonus', 'Motives' );
+    if ($c_to === false || $c_from === false) {
+        error_parameters(array($p_date_from, $p_date_to));
+        trigger_error(ERROR_GENERIC, ERROR);
+    }
+    $t_bug_table = db_get_table('mantis_bug_table');
+    $t_bugnote_table = db_get_table('mantis_bugnote_table');
+    $t_bugnote_text_table = db_get_table('mantis_bugnote_text_table');
+    $t_bonus_table = plugin_table('bonus', 'Motives');
 
-	$t_query = "SELECT b.*, bt.category_id, t.note, m.amount, m.user_id as bonus_user_id
+    $t_query = "SELECT b.*, bt.category_id, t.note, m.amount, m.user_id as bonus_user_id
 					FROM      $t_bonus_table m
                     LEFT JOIN $t_bug_table bt ON bt.id = m.bug_id
                     LEFT JOIN $t_bugnote_table b ON b.id = m.bugnote_id
@@ -102,23 +102,23 @@ function motives_get_latest_bugnotes( $p_project_id, $p_date_from, $p_date_to, $
                     		m.bugnote_id IS NOT NULL AND
                     		LENGTH(t.note) > 0
                     " .
-		(!empty( $c_user_id ) ? ' AND b.reporter_id = ' . $c_user_id : '') .
-		(!empty( $c_bonus_user_id ) ? ' AND m.user_id = ' . $c_bonus_user_id : '') .
-		(!empty( $c_category_id ) ? ' AND bt.category_id = ' . $c_category_id : '') .
-		' ORDER BY b.id DESC LIMIT ' . $p_limit;
+        (!empty($c_user_id) ? ' AND b.reporter_id = ' . $c_user_id : '') .
+        (!empty($c_bonus_user_id) ? ' AND m.user_id = ' . $c_bonus_user_id : '') .
+        (!empty($c_category_id) ? ' AND bt.category_id = ' . $c_category_id : '') .
+        ' ORDER BY b.id DESC LIMIT ' . $p_limit;
 
-	$t_bugnotes = array();
+    $t_bugnotes = array();
 
-	$t_result = db_query_bound( $t_query, array( $p_project_id ) );
+    $t_result = db_query_bound($t_query, array($p_project_id));
 
-	while ( $row = db_fetch_array( $t_result ) ) {
-		$t_bugnotes[] = $row;
-	}
-	return $t_bugnotes;
+    while ($row = db_fetch_array($t_result)) {
+        $t_bugnotes[] = $row;
+    }
+    return $t_bugnotes;
 }
 
-function motives_format_amount( $p_amount ) {
-	return !empty($p_amount) && $p_amount > 0 ? '+' . $p_amount : $p_amount;
+function motives_format_amount($p_amount) {
+    return !empty($p_amount) && $p_amount > 0 ? '+' . $p_amount : $p_amount;
 }
 
 /**
@@ -126,44 +126,44 @@ function motives_format_amount( $p_amount ) {
  * @param array $p_bugnotes Bug notes
  * @return array
  */
-function motives_group_by_bug( $p_bugnotes ) {
-	$t_group_by_bug = array();
-	foreach ( $p_bugnotes as $t_bugnote ) {
-		$bug_id = (int)$t_bugnote['bug_id'];
-		if ( empty( $t_group_by_bug[$bug_id] ) ) $t_group_by_bug[$bug_id] = array();
-		$t_group_by_bug[$bug_id][] = $t_bugnote;
-	}
-	return $t_group_by_bug;
+function motives_group_by_bug($p_bugnotes) {
+    $t_group_by_bug = array();
+    foreach ($p_bugnotes as $t_bugnote) {
+        $bug_id = (int)$t_bugnote['bug_id'];
+        if (empty($t_group_by_bug[$bug_id])) $t_group_by_bug[$bug_id] = array();
+        $t_group_by_bug[$bug_id][] = $t_bugnote;
+    }
+    return $t_group_by_bug;
 }
 
 /**
  * Retrieve a full list of changes to the bonus's information.
- * @param integer $p_bug_id     A bug identifier.
+ * @param integer $p_bug_id A bug identifier.
  * @param integer $p_bugnote_id A bugnote identifier.
  * @return array/null Array of Revision rows
  */
-function motives_revision_list( $p_bug_id, $p_bugnote_id = 0 ) {
-	db_param_push();
-	$t_params = array( $p_bug_id );
-	$t_bonus_revision_table       = plugin_table( 'bonus_revision', 'Motives' );
-	$t_query = "SELECT * FROM $t_bonus_revision_table WHERE bug_id=" . db_param();
+function motives_revision_list($p_bug_id, $p_bugnote_id = 0) {
+    db_param_push();
+    $t_params = array($p_bug_id);
+    $t_bonus_revision_table = plugin_table('bonus_revision', 'Motives');
+    $t_query = "SELECT * FROM $t_bonus_revision_table WHERE bug_id=" . db_param();
 
-	if( $p_bugnote_id > 0 ) {
-		$t_query .= ' AND bugnote_id=' . db_param();
-		$t_params[] = $p_bugnote_id;
-	} else {
-		$t_query .= ' AND bugnote_id=0';
-	}
+    if ($p_bugnote_id > 0) {
+        $t_query .= ' AND bugnote_id=' . db_param();
+        $t_params[] = $p_bugnote_id;
+    } else {
+        $t_query .= ' AND bugnote_id=0';
+    }
 
-	$t_query .= ' ORDER BY id DESC';
-	$t_result = db_query( $t_query, $t_params );
+    $t_query .= ' ORDER BY id DESC';
+    $t_result = db_query($t_query, $t_params);
 
-	$t_revisions = array();
-	while( $t_row = db_fetch_array( $t_result ) ) {
-		$t_revisions[$t_row['id']] = $t_row;
-	}
+    $t_revisions = array();
+    while ($t_row = db_fetch_array($t_result)) {
+        $t_revisions[$t_row['id']] = $t_row;
+    }
 
-	return $t_revisions;
+    return $t_revisions;
 }
 
 /**
@@ -172,50 +172,50 @@ function motives_revision_list( $p_bug_id, $p_bugnote_id = 0 ) {
  * @param integer $p_rev_id A bonus revision identifier.
  * @return array|null Array of Revision rows
  */
-function motives_revision_like( $p_rev_id ) {
-	db_param_push();
-	$t_bonus_revision_table       = plugin_table( 'bonus_revision', 'Motives' );
-	$t_query = "SELECT bug_id, bugnote_id FROM $t_bonus_revision_table WHERE id=" . db_param();
-	$t_result = db_query( $t_query, array( $p_rev_id ) );
+function motives_revision_like($p_rev_id) {
+    db_param_push();
+    $t_bonus_revision_table = plugin_table('bonus_revision', 'Motives');
+    $t_query = "SELECT bug_id, bugnote_id FROM $t_bonus_revision_table WHERE id=" . db_param();
+    $t_result = db_query($t_query, array($p_rev_id));
 
-	$t_row = db_fetch_array( $t_result );
+    $t_row = db_fetch_array($t_result);
 
-	if( !$t_row ) {
-		trigger_error( ERROR_BUG_REVISION_NOT_FOUND, ERROR );
-	}
+    if (!$t_row) {
+        trigger_error(ERROR_BUG_REVISION_NOT_FOUND, ERROR);
+    }
 
-	$t_bug_id = $t_row['bug_id'];
-	$t_bugnote_id = $t_row['bugnote_id'];
+    $t_bug_id = $t_row['bug_id'];
+    $t_bugnote_id = $t_row['bugnote_id'];
 
-	db_param_push();
-	$t_params = array( $t_bug_id );
-	$t_query = "SELECT * FROM $t_bonus_revision_table WHERE bug_id=" . db_param();
+    db_param_push();
+    $t_params = array($t_bug_id);
+    $t_query = "SELECT * FROM $t_bonus_revision_table WHERE bug_id=" . db_param();
 
-	if( $t_bugnote_id > 0 ) {
-		$t_query .= ' AND bugnote_id=' . db_param();
-		$t_params[] = $t_bugnote_id;
-	} else {
-		$t_query .= ' AND bugnote_id=0';
-	}
+    if ($t_bugnote_id > 0) {
+        $t_query .= ' AND bugnote_id=' . db_param();
+        $t_params[] = $t_bugnote_id;
+    } else {
+        $t_query .= ' AND bugnote_id=0';
+    }
 
-	$t_query .= ' ORDER BY id DESC';
-	$t_result = db_query( $t_query, $t_params );
+    $t_query .= ' ORDER BY id DESC';
+    $t_result = db_query($t_query, $t_params);
 
-	$t_revisions = array();
-	while( $t_row = db_fetch_array( $t_result ) ) {
-		$t_revisions[$t_row['id']] = $t_row;
-	}
+    $t_revisions = array();
+    while ($t_row = db_fetch_array($t_result)) {
+        $t_revisions[$t_row['id']] = $t_row;
+    }
 
-	return $t_revisions;
+    return $t_revisions;
 }
 
 /**
  * Add new revision for the bonus
  * @return integer last successful insert id
  */
-function motives_revision_add( $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount ) {
-	$t_update_table = plugin_table( 'bonus_revision', 'Motives' );
-	$t_query        = "INSERT INTO $t_update_table (
+function motives_revision_add($p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, $p_amount) {
+    $t_update_table = plugin_table('bonus_revision', 'Motives');
+    $t_query = "INSERT INTO $t_update_table (
 					bug_id,
 					bugnote_id,
 					reporter_id,
@@ -229,32 +229,113 @@ function motives_revision_add( $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user
 					' . db_param() . ',
 					' . db_param() . ',
 					' . db_param() . ' )';
-	db_query( $t_query, array(
-		$p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, db_now(), $p_amount
-	) );
-	return db_insert_id($t_update_table);
+    db_query($t_query, array(
+        $p_bug_id, $p_bugnote_id, $p_reporter_id, $p_user_id, db_now(), $p_amount,
+    ));
+    return db_insert_id($t_update_table);
 }
 
 /**
  * Retrieve a count of revisions to the bonus's information.
- * @param integer $p_bug_id     A bug identifier.
+ * @param integer $p_bug_id A bug identifier.
  * @param integer $p_bugnote_id A bugnote identifier (optional).
  * @return array|null Array of Revision rows
  */
-function motives_revision_count( $p_bug_id, $p_bugnote_id = 0 ) {
-	db_param_push();
-	$t_revision_table = plugin_table( 'bonus_revision', 'Motives' );
-	$t_params = array( $p_bug_id );
-	$t_query = "SELECT COUNT(id) FROM $t_revision_table WHERE bug_id=" . db_param();
+function motives_revision_count($p_bug_id, $p_bugnote_id = 0) {
+    db_param_push();
+    $t_revision_table = plugin_table('bonus_revision', 'Motives');
+    $t_params = array($p_bug_id);
+    $t_query = "SELECT COUNT(id) FROM $t_revision_table WHERE bug_id=" . db_param();
 
-	if( $p_bugnote_id > 0 ) {
-		$t_query .= ' AND bugnote_id=' . db_param();
-		$t_params[] = $p_bugnote_id;
-	} else {
-		$t_query .= ' AND bugnote_id=0';
-	}
+    if ($p_bugnote_id > 0) {
+        $t_query .= ' AND bugnote_id=' . db_param();
+        $t_params[] = $p_bugnote_id;
+    } else {
+        $t_query .= ' AND bugnote_id=0';
+    }
 
-	$t_result = db_query( $t_query, $t_params );
+    $t_result = db_query($t_query, $t_params);
 
-	return db_result( $t_result );
+    return db_result($t_result);
+}
+
+function motives_department_add($department_name) {
+    $t_update_table = plugin_table('departments', 'Motives');
+    $t_query = "INSERT INTO $t_update_table(`name`, `created_at`, `updated_at`) VALUES(" . db_param() . ", now(), now())";
+    db_query($t_query, array($department_name));
+    return db_insert_id($t_update_table);
+}
+
+function motives_department_change($id, $department_name) {
+    $t_update_table = plugin_table('departments', 'Motives');
+    $t_query = "UPDATE $t_update_table SET `name` = " . db_param() . ", `updated_at` = now() WHERE id = " . db_param();
+    db_query($t_query, array($department_name, $id));
+    return;
+}
+
+function motives_department_get() {
+    $t_update_table = plugin_table('departments', 'Motives');
+    $t_query = "SELECT * FROM $t_update_table";
+    $t_result = db_query($t_query);
+
+    if (db_num_rows($t_result) < 1) {
+        return null;
+    }
+    $t_rows = array();
+    while ($t_row = db_fetch_array($t_result)) {
+        $t_rows[$t_row['id']] = $t_row;
+    }
+    return $t_rows;
+}
+
+function motives_get_users() {
+    $t_projects = user_get_accessible_projects($t_current_user);
+
+    # Get list of users having access level for all accessible projects
+    $t_users = array();
+    foreach ($t_projects as $t_project_id) {
+        $t_project_users_list = project_get_all_user_rows($t_project_id, $p_access);
+        # Do a 'smart' merge of the project's user list, into an
+        # associative array (to remove duplicates)
+        foreach ($t_project_users_list as $t_id => $t_user) {
+            $t_users[$t_id] = $t_user;
+        }
+        # Clear the array to release memory
+        unset($t_project_users_list);
+    }
+    unset($t_projects);
+    return $t_users;
+}
+
+function motives_department_set_users($department_id, $workers, $chiefs) {
+    $t_update_table = plugin_table('user_departments', 'Motives');
+    $t_query = "DELETE FROM $t_update_table WHERE `department_id` = " . db_param();
+    db_query($t_query, [$department_id]);
+
+    $t_query = "
+        INSERT INTO $t_update_table (`user_id`, `department_id`, `role`,  `created_at`, `updated_at`)
+        VALUES (" . db_param() . "," . db_param() . "," . db_param() . ", now(), now())
+    ";
+    foreach (array_unique(array_merge($workers, $chiefs)) as $user) {
+        $role = in_array($user, $chiefs) ? 'chief' : 'worker';
+        db_query($t_query, [$user, $department_id, $role]);
+    }
+}
+
+function motives_department_get_users($department_id) {
+    db_param_push();
+    $t_revision_table = plugin_table('user_departments', 'Motives');
+    $t_params = array($department_id);
+
+    $t_query = "SELECT * FROM $t_revision_table WHERE department_id = " . db_param();
+    $t_result = db_query($t_query, $t_params);
+
+    if (db_num_rows($t_result) < 1) {
+        return null;
+    }
+    $t_rows = array();
+    while ($t_row = db_fetch_array($t_result)) {
+        $t_rows[$t_row['user_id']] = $t_row;
+    }
+    return $t_rows;
 }

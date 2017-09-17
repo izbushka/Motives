@@ -43,3 +43,25 @@ hr.motives-hr {
 .motives-fines-by-user, .motives-bonuses-by-user {
     padding-left: 10px;
 }
+
+#motivesEditor {
+    background: rgba(0, 0, 0, 0.71);
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    padding-top: 20%;
+    z-index: 10000;
+}
+.motives-editor-form label {
+    min-width: 200px;
+    border: 1px solid #dadada;
+    padding: 0 0 0 5px;
+    margin-right: 10px;
+}
+.motives-editor-form label span{
+    float: right;
+    background: #dadada;
+    padding: 0 5px;
+}
