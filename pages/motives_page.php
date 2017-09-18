@@ -73,6 +73,29 @@ function print_filter_note_user_id2( $p_name = FILTER_PROPERTY_NOTE_USER_ID ) {
 	<?php
 }
 
+/**
+ *  print note reporter field
+ */
+function print_filter_department( $p_name = FILTER_PROPERTY_DEPARTMENT ) {
+	global $t_select_modifier, $t_filter;
+    $departments = motives_department_get();
+	?>
+	<!-- BUGNOTE REPORTER -->
+	<select <?php echo $t_select_modifier; ?> name="<?php echo $p_name; ?>">
+		<option
+				value="<?php echo META_FILTER_ANY ?>" <?php check_selected( $t_filter[FILTER_PROPERTY_DEPARTMENT], META_FILTER_ANY ); ?>>
+			[<?php echo lang_get( 'none' ) ?>]
+		</option>
+		<?php if ( access_has_project_level( config_get( 'view_handler_threshold' ) ) ) {
+			foreach($departments as $department) {
+                echo '<option value="' . $department['id'] . '">' . $department['name'] . '</option>';
+            }
+		}
+		?>
+	</select>
+	<?php
+}
+
 function string_get_bugnote_view_link2( $p_bug_id, $p_bugnote_id, $p_user_id = null, $p_detail_info = true, $p_fqdn = false ) {
 	$t_bug_id = (int)$p_bug_id;
 
@@ -291,6 +314,10 @@ foreach ( $t_project_ids as $t_project_id_item ) {
 										$t_filter['end_month']         = $t_stats_to_m;
 										$t_filter['end_year']          = $t_stats_to_y;
 										print_filter_do_filter_by_date( true, $t_filter );
+
+										echo plugin_lang_get( 'department' ) . ':&nbsp;';
+										$t_filter[FILTER_PROPERTY_DEPARTMENT] = $f_note_user_id_arr;
+										print_filter_department();
 										?>
 									</td>
 									<td class="bold">

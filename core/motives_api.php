@@ -91,12 +91,19 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
     $t_bugnote_table = db_get_table('mantis_bugnote_table');
     $t_bugnote_text_table = db_get_table('mantis_bugnote_text_table');
     $t_bonus_table = plugin_table('bonus', 'Motives');
+    $t_user_departments_table = plugin_table('user_departments', 'Motives');
+
+    $all_departments = access_has_global_level( config_get( 'admin_site_threshold' ) );
+    if (!$all_departments) {
+        $my_departments = motives_department_get();
+    }
 
     $t_query = "SELECT b.*, bt.category_id, t.note, m.amount, m.user_id as bonus_user_id
 					FROM      $t_bonus_table m
                     LEFT JOIN $t_bug_table bt ON bt.id = m.bug_id
                     LEFT JOIN $t_bugnote_table b ON b.id = m.bugnote_id
                     LEFT JOIN $t_bugnote_text_table t ON b.bugnote_text_id = t.id
+                    LEFT JOIN $t_user_departments_table d ON m.user_id = d.user_id
                     WHERE 	bt.project_id=" . db_param() . " AND
                     		b.date_submitted >= $c_from AND b.date_submitted <= $c_to AND
                     		m.bugnote_id IS NOT NULL AND
@@ -105,6 +112,7 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
         (!empty($c_user_id) ? ' AND b.reporter_id = ' . $c_user_id : '') .
         (!empty($c_bonus_user_id) ? ' AND m.user_id = ' . $c_bonus_user_id : '') .
         (!empty($c_category_id) ? ' AND bt.category_id = ' . $c_category_id : '') .
+        (empty($all_departments) ? ' AND d.department_id IN (0, ' . implode(',', array_keys($my_departments)) . ')' : '') .
         ' ORDER BY b.id DESC LIMIT ' . $p_limit;
 
     $t_bugnotes = array();
@@ -274,8 +282,18 @@ function motives_department_change($id, $department_name) {
 }
 
 function motives_department_get() {
-    $t_update_table = plugin_table('departments', 'Motives');
-    $t_query = "SELECT * FROM $t_update_table";
+    $t_departments = plugin_table('departments', 'Motives');
+    $t_department_users = plugin_table('user_departments', 'Motives');
+    //$t_update_table = plugin_table('departments', 'Motives');
+    if (access_has_global_level( config_get( 'admin_site_threshold' ) ) ) {
+        $t_query = "SELECT * FROM $t_departments";
+    } else {
+        $current_user = auth_get_current_user_id();
+        $t_query = "
+            SELECT d.* FROM $t_department_users du
+                INNER JOIN $t_departments d ON d.id = du.department_id AND du.role = 'chief'
+            WHERE du.user_id = '$current_user'";
+    }
     $t_result = db_query($t_query);
 
     if (db_num_rows($t_result) < 1) {
@@ -288,13 +306,18 @@ function motives_department_get() {
     return $t_rows;
 }
 
+function motives_department_get_selector() {
+    
+}
+
 function motives_get_users() {
+    $t_current_user = auth_get_current_user_id();
     $t_projects = user_get_accessible_projects($t_current_user);
 
     # Get list of users having access level for all accessible projects
     $t_users = array();
     foreach ($t_projects as $t_project_id) {
-        $t_project_users_list = project_get_all_user_rows($t_project_id, $p_access);
+        $t_project_users_list = project_get_all_user_rows($t_project_id);
         # Do a 'smart' merge of the project's user list, into an
         # associative array (to remove duplicates)
         foreach ($t_project_users_list as $t_id => $t_user) {
