@@ -87,9 +87,9 @@ function print_filter_department( $p_name = FILTER_PROPERTY_DEPARTMENT ) {
 			[<?php echo lang_get( 'none' ) ?>]
 		</option>
 		<?php if ( access_has_project_level( config_get( 'view_handler_threshold' ) ) ) {
-			foreach($departments as $department) {
-                echo '<option value="' . $department['id'] . '">' . $department['name'] . '</option>';
-            }
+			foreach($departments as $department) { ?>
+                <option <?php check_selected( $t_filter[FILTER_PROPERTY_DEPARTMENT], intval($department['id']) ); ?> value="<?php echo $department['id']?>"><?php echo $department['name'] ?></option>
+            <?php }
 		}
 		?>
 	</select>
@@ -155,6 +155,7 @@ $f_category_id    = gpc_get_int('category_id', -1);
 
 $f_project = gpc_get_string( 'project', '' );
 $f_page    = gpc_get_string( 'page', '' );
+$f_department    = gpc_get_int( 'department_id', '' );
 
 if ( is_blank( $f_project ) ) {
 	$f_project_id = gpc_get_int( 'project_id', -1 );
@@ -224,7 +225,7 @@ $t_stats_to_y = gpc_get_int( 'end_year', $t_stats_to_def_y );
 
 $t_from = "$t_stats_from_y-$t_stats_from_m-$t_stats_from_d";
 $t_to   = "$t_stats_to_y-$t_stats_to_m-$t_stats_to_d";
-
+$t_to_first_day_pattern   = "$t_stats_to_y-" . ($t_stats_to_m > 10 ? $t_stats_to_m : "0$t_stats_to_m");
 
 $t_show_status_legend   = plugin_config_get( 'show_status_legend' );
 $t_show_avatar          = plugin_config_get( 'show_avatar', config_get( 'show_avatar', OFF ) );
@@ -244,8 +245,11 @@ $t_total_bonuses = 0;
 $t_total_fines   = 0;
 $t_user_bonuses  = array();
 $t_user_fines    = array();
+$t_user_bonuses_total  = array();
+$t_user_fines_total    = array();
+
 foreach ( $t_project_ids as $t_project_id_item ) {
-	$t_bug_notes     = motives_get_latest_bugnotes( $t_project_id_item, $t_from, $t_to, $f_note_user_id, $f_bonus_user_id, $f_category_id, $t_limit_bug_notes );
+	$t_bug_notes     = motives_get_latest_bugnotes( $t_project_id_item, $t_from, $t_to, $f_note_user_id, $f_bonus_user_id, $f_category_id, $t_limit_bug_notes , $f_department);
 	$t_bug_note_size = count( $t_bug_notes );
 	if ( $t_bug_note_size == 0 ) continue;
 
@@ -266,12 +270,24 @@ foreach ( $t_project_ids as $t_project_id_item ) {
 			$t_total_bonuses += $t_amount;
 			if ( !isset( $t_user_bonuses[$t_bug_item['bonus_user_id']][$t_project_id_item][$t_bug_category_id] ) )
 				$t_user_bonuses[$t_bug_item['bonus_user_id']][$t_project_id_item][$t_bug_category_id] = 0;
+			if ( !isset( $t_user_bonuses_total[$t_bug_item['bonus_user_id']] ) )
+				$t_user_bonuses_total[$t_bug_item['bonus_user_id']] = ['all' => 0, 'month' => 0];
 			$t_user_bonuses[$t_bug_item['bonus_user_id']][$t_project_id_item][$t_bug_category_id] += $t_amount;
+			$t_user_bonuses_total[$t_bug_item['bonus_user_id']]['all'] += $t_amount;
+            if (date('Y-m',$t_bug_item['date_submitted']) == $t_to_first_day_pattern) {
+                $t_user_bonuses_total[$t_bug_item['bonus_user_id']]['month'] += $t_amount;
+            }
 		} else {
 			$t_total_fines += $t_amount;
 			if ( !isset( $t_user_fines[$t_bug_item['bonus_user_id']][$t_project_id_item][$t_bug_category_id] ) )
 				$t_user_fines[$t_bug_item['bonus_user_id']][$t_project_id_item][$t_bug_category_id] = 0;
+			if ( !isset( $t_user_fines_total[$t_bug_item['bonus_user_id']] ) )
+				$t_user_fines_total[$t_bug_item['bonus_user_id']] = ['all' => 0, 'month' => 0];
 			$t_user_fines[$t_bug_item['bonus_user_id']][$t_project_id_item][$t_bug_category_id] += $t_amount;
+			$t_user_fines_total[$t_bug_item['bonus_user_id']]['all'] += $t_amount;
+            if (date('Y-m',$t_bug_item['date_submitted']) == $t_to_first_day_pattern) {
+                $t_user_fines_total[$t_bug_item['bonus_user_id']]['month'] += $t_amount;
+            }
 		}
 		$t_category_bugs[$t_project_id_item][$t_bug_category_id][$t_bug_item['bug_id']][] = $t_bug_item;
 	}
@@ -298,6 +314,11 @@ foreach ( $t_project_ids as $t_project_id_item ) {
 								echo '<span class="badge">', $t_total_issues_html, '/', $t_total_notes_html, '</span>';
 							}
 							?>
+                            <div class="widget-toolbar">
+                                <a href="<?php echo string_attribute( plugin_page( 'departments_page' ) ) ?>">
+                                    <i class="1 ace-icon fa bigger-125 fa-cogs"></i>
+                                </a>
+                            </div>
 						</h4>
 					</div>
 					<div class="widget-body">
@@ -316,7 +337,7 @@ foreach ( $t_project_ids as $t_project_id_item ) {
 										print_filter_do_filter_by_date( true, $t_filter );
 
 										echo plugin_lang_get( 'department' ) . ':&nbsp;';
-										$t_filter[FILTER_PROPERTY_DEPARTMENT] = $f_note_user_id_arr;
+										$t_filter[FILTER_PROPERTY_DEPARTMENT] = $f_department;
 										print_filter_department();
 										?>
 									</td>
@@ -376,8 +397,26 @@ foreach ( $t_project_ids as $t_project_id_item ) {
 					<?php echo plugin_lang_get( 'total_amount_bonuses' ) ?>: <?php echo $t_total_bonuses ?><br/>
 					<?php echo plugin_lang_get( 'total_amount_fines' ) ?>: <?php echo $t_total_fines ?><br/>
 					<?php
+					if ( !empty( $t_user_bonuses_total ) ) {
+						echo '<span><u>' . plugin_lang_get('sum_bonuses_user') . " ($t_from - $t_to):</u></span>";
+						echo '<div class="motives-bonuses-by-user">';
+						foreach ( $t_user_bonuses_total as $t_user_id => $bonus ) {
+							echo '<span class="bold">' . user_get_name( $t_user_id ) . '</span>: ' . motives_format_amount( $bonus['all'] );
+							echo ' (' . plugin_lang_get('last_month') . ': ' . motives_format_amount( $bonus['month'] ) . ')</br>';
+						}
+						echo '</div>';
+					}
+					if ( !empty( $t_user_fines_total ) ) {
+						echo '<span><u>' . plugin_lang_get('sum_fines_user') . " ($t_from - $t_to):</u></span>";;
+						echo '<div class="motives-fines-by-user">';
+						foreach ( $t_user_fines_total as $t_user_id => $bonus ) {
+							echo '<span class="bold">' . user_get_name( $t_user_id ) . '</span>: ' . motives_format_amount( $bonus['all'] );
+							echo ' (' . plugin_lang_get('last_month') . ': ' . motives_format_amount( $bonus['month'] ) . ')</br>';
+						}
+						echo '</div>';
+					}
 					if ( !empty( $t_user_bonuses ) ) {
-						echo '<span>' . plugin_lang_get('total_bonuses_user') . ':</span>';
+						echo '<span><u>' . plugin_lang_get('total_bonuses_user') . ':</u></span>';
 						echo '<div class="motives-bonuses-by-user">';
 						foreach ( $t_user_bonuses as $t_user_id => $t_user_projects ) {
 							echo '<span class="bold">' . user_get_name( $t_user_id ) . '</span>:<br/>';
@@ -390,7 +429,7 @@ foreach ( $t_project_ids as $t_project_id_item ) {
 						echo '</div>';
 					}
 					if (!empty( $t_user_fines )) {
-						echo '<span>' . plugin_lang_get('total_fines_user') . ':</span>';
+						echo '<span><u>' . plugin_lang_get('total_fines_user') . ':</u></span>';
 						echo '<div class="motives-fines-by-user">';
 						foreach ( $t_user_fines as $t_user_id => $t_user_projects ) {
 							echo '<span class="bold">' . user_get_name( $t_user_id ) . '</span>:<br/>';

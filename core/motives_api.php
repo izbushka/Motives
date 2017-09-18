@@ -76,12 +76,13 @@ function motives_get_by_bug($p_bug_id) {
  * @param int $p_limit Bug notes limit
  * @return array
  */
-function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p_user_id = null, $p_bonus_user_id, $p_category_id, $p_limit = 500) {
+function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p_user_id = null, $p_bonus_user_id, $p_category_id, $p_limit = 500, $p_department) {
     $c_from = strtotime($p_date_from);
     $c_to = strtotime($p_date_to) + SECONDS_PER_DAY - 1;
     $c_user_id = empty($p_user_id) ? 0 : intval($p_user_id, 10);
     $c_bonus_user_id = empty($p_bonus_user_id) ? 0 : intval($p_bonus_user_id, 10);
     $c_category_id = empty($p_category_id) || $p_category_id == -1 ? 0 : intval($p_category_id, 10);
+    $c_department = empty($p_department) || $p_department == -1 ? 0 : intval($p_department, 10);
 
     if ($c_to === false || $c_from === false) {
         error_parameters(array($p_date_from, $p_date_to));
@@ -93,16 +94,15 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
     $t_bonus_table = plugin_table('bonus', 'Motives');
     $t_user_departments_table = plugin_table('user_departments', 'Motives');
 
-    $all_departments = access_has_global_level( config_get( 'admin_site_threshold' ) );
+    $all_departments = access_has_global_level(config_get('admin_site_threshold'));
     $my_departments = [];
-    if (!$all_departments) {
-        $my_departments = array_keys(motives_department_get());
-        if (empty($my_departments)) {
-            $my_departments[]  = 0;
-        }
+    $my_departments = array_keys(motives_department_get());
+    if (empty($my_departments)) {
+        $my_departments[] = 0;
     }
 
-    $t_query = "SELECT b.*, bt.category_id, t.note, m.amount, m.user_id as bonus_user_id
+    $t_query = "SELECT b.id, b.bug_id, b.reporter_id, b.date_submitted, b.last_modified,
+                        bt.category_id, t.note, m.amount, m.user_id as bonus_user_id
 					FROM      $t_bonus_table m
                     LEFT JOIN $t_bug_table bt ON bt.id = m.bug_id
                     LEFT JOIN $t_bugnote_table b ON b.id = m.bugnote_id
@@ -117,6 +117,8 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
         (!empty($c_bonus_user_id) ? ' AND m.user_id = ' . $c_bonus_user_id : '') .
         (!empty($c_category_id) ? ' AND bt.category_id = ' . $c_category_id : '') .
         (empty($all_departments) ? ' AND d.department_id IN (' . implode(',', $my_departments) . ')' : '') .
+        (!empty($p_department) && in_array($p_department, $my_departments) ? ' AND d.department_id = ' . $c_department : '') .
+
         ' ORDER BY b.id DESC LIMIT ' . $p_limit;
 
     $t_bugnotes = array();
@@ -286,10 +288,14 @@ function motives_department_change($id, $department_name) {
 }
 
 function motives_department_get() {
+    static $departments;
+    if (!empty($departments)) {
+        return $departments;
+    }
     $t_departments = plugin_table('departments', 'Motives');
     $t_department_users = plugin_table('user_departments', 'Motives');
     //$t_update_table = plugin_table('departments', 'Motives');
-    if (access_has_global_level( config_get( 'admin_site_threshold' ) ) ) {
+    if (access_has_global_level(config_get('admin_site_threshold'))) {
         $t_query = "SELECT * FROM $t_departments";
     } else {
         $current_user = auth_get_current_user_id();
@@ -303,15 +309,15 @@ function motives_department_get() {
     if (db_num_rows($t_result) < 1) {
         return null;
     }
-    $t_rows = array();
+    $departments = array();
     while ($t_row = db_fetch_array($t_result)) {
-        $t_rows[$t_row['id']] = $t_row;
+        $departments[$t_row['id']] = $t_row;
     }
-    return $t_rows;
+    return $departments;
 }
 
 function motives_department_get_selector() {
-    
+
 }
 
 function motives_get_users() {
@@ -350,7 +356,7 @@ function motives_department_set_users($department_id, $workers, $chiefs) {
 }
 
 function motives_department_get_users($department_id) {
-    db_param_push();
+    //db_param_push();
     $t_revision_table = plugin_table('user_departments', 'Motives');
     $t_params = array($department_id);
 

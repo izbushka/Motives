@@ -66,3 +66,6 @@ $s_plugin_Motives_edit = 'Edit';
 $s_plugin_Motives_save = 'Save';
 $s_plugin_Motives_cancel = 'Cancel';
 $s_plugin_Motives_actions = 'Actions';
+$s_plugin_Motives_sum_fines_user = 'Total amount of fines by User';
+$s_plugin_Motives_sum_bonuses_user = 'Total amount of bonuses by User';
+$s_plugin_Motives_last_month = 'Last month';

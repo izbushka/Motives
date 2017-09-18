@@ -32,16 +32,27 @@ require_once('motives_api.php');
 if (!access_has_global_level(plugin_config_get('view_report_threshold'))) {
     access_denied();
 }
+$is_admin = access_has_global_level(config_get('admin_site_threshold'));
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $department_name = gpc_get_string('department_name');
+    $department_name = gpc_get_string('department_name', '');
     $department_id = gpc_get_int('department_id');
     $department_workers = gpc_get_int_array('workers', []);
     $department_chiefs = gpc_get_int_array('chiefs', []);
-    if ($department_id > 0) {
-        motives_department_change($department_id, $department_name);
-    } else {
-        $department_id = motives_department_add($department_name);
+
+    if ($is_admin) { // only admin can modify departments
+        if ($department_id > 0) {
+            motives_department_change($department_id, $department_name);
+        } else {
+            $department_id = motives_department_add($department_name);
+        }
+    } else { // don't allow managers to change chiefs. Replacing chiefs by DB data here
+        $department_chiefs = [];
+        foreach (motives_department_get_users($department_id) as $user_id => $user) {
+            if ($user['role'] == 'chief') {
+                $department_chiefs[] = $user_id;
+            }
+        }
     }
 
     motives_department_set_users($department_id, $department_workers, $department_chiefs);
@@ -51,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     layout_page_begin();
 
     $department_name = '';
+    $departments = [];
     if (gpc_isset('id')) {
         $department_id = gpc_get_int('id');
         $departments = motives_department_get();
@@ -58,6 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $department_users = motives_department_get_users($department_id);
     } else {
         $department_id = 0;
+    }
+    if (!$is_admin && empty($departments[$department_id])) {
+        access_denied();
     }
     ?>
 
@@ -72,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="widget-header widget-header-small">
                     <h4 class="widget-title lighter">
                         <i class="ace-icon fa fa-edit"></i>
-                        <?php echo plugin_lang_get('department_name') ?>
+                        <?php echo plugin_lang_get('department') ?>
                     </h4>
                 </div>
                 <div class="widget-body">
@@ -80,11 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                         <form method="POST" name="activity_page_form"
                               action="<?php echo string_attribute(plugin_page('departments_edit')) ?>">
-                            <input name="department_id" type="hidden" id="department_id" value="<?php echo $department_id ?>"></td>
-                            Name:
-                            <input name="department_name" type="text" value="<?php echo $department_name?>">
-                            <input type="submit" value="<?php echo plugin_lang_get('save') ?>">
-                            <hr>
+                            <?php if($is_admin) { ?>
+                                <h3><?php echo plugin_lang_get('department_name') ?></h3>
+                                <input name="department_name" type="text" value="<?php echo $department_name?>">
+                                <input type="submit" value="<?php echo plugin_lang_get('save') ?>">
+                            <?php } ?>
+                            <input name="department_id" type="hidden" id="department_id" value="<?php echo $department_id ?>">
                             <h3><?php echo plugin_lang_get('department_members') ?></h3>
                             <?php foreach (motives_get_users() as $user) {
                                 $checked_worker = !empty($department_users[$user['id']]) ? 'checked' : '';
@@ -93,7 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <label title="<?php echo $user['realname'] ?>">
                                     <input type="checkbox" name="workers[]" <?php echo $checked_worker ?> value="<?php echo $user['id'] ?>">
                                     <?php echo $user['username'] ?>
+                                    <?php if ($is_admin) { ?>
                                     <span><input type="checkbox" name="chiefs[]" <?php echo $checked_chief ?> value="<?php echo $user['id'] ?>"> chief</span>
+                                    <?php } ?>
                                 </label>
                             <?php } ?>
                             <br><input type="submit" value="<?php echo plugin_lang_get('save') ?>">
