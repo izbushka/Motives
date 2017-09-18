@@ -94,8 +94,12 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
     $t_user_departments_table = plugin_table('user_departments', 'Motives');
 
     $all_departments = access_has_global_level( config_get( 'admin_site_threshold' ) );
+    $my_departments = [];
     if (!$all_departments) {
-        $my_departments = motives_department_get();
+        $my_departments = array_keys(motives_department_get());
+        if (empty($my_departments)) {
+            $my_departments[]  = 0;
+        }
     }
 
     $t_query = "SELECT b.*, bt.category_id, t.note, m.amount, m.user_id as bonus_user_id
@@ -112,7 +116,7 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
         (!empty($c_user_id) ? ' AND b.reporter_id = ' . $c_user_id : '') .
         (!empty($c_bonus_user_id) ? ' AND m.user_id = ' . $c_bonus_user_id : '') .
         (!empty($c_category_id) ? ' AND bt.category_id = ' . $c_category_id : '') .
-        (empty($all_departments) ? ' AND d.department_id IN (0, ' . implode(',', array_keys($my_departments)) . ')' : '') .
+        (empty($all_departments) ? ' AND d.department_id IN (' . implode(',', $my_departments) . ')' : '') .
         ' ORDER BY b.id DESC LIMIT ' . $p_limit;
 
     $t_bugnotes = array();
