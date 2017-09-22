@@ -70,3 +70,5 @@ $s_plugin_Motives_actions = 'Действия';
 $s_plugin_Motives_sum_fines_user = 'Сумма штрафов по пользователю';
 $s_plugin_Motives_sum_bonuses_user = 'Сумма бонусов по пользователю';
 $s_plugin_Motives_last_month = 'За последний месяц';
+$s_plugin_Motives_cron_auth_user = 'Mantis-пользователь для отправки уведомлений (admin)';
+$s_plugin_Motives_empty_set = 'Записей не найдено';

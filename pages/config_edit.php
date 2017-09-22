@@ -22,6 +22,7 @@ access_ensure_global_level( config_get( 'manage_plugin_threshold' ) );
 $f_show_avatar        = gpc_get_int( 'show_avatar', plugin_config_get( 'show_avatar' ) );
 $f_limit_bug_notes    = gpc_get_int( 'limit_bug_notes', plugin_config_get( 'limit_bug_notes' ) );
 $f_day_count          = gpc_get_int( 'day_count', plugin_config_get( 'day_count' ) );
+$f_cron_user          = gpc_get_string( 'cron_user', plugin_config_get( 'cron_user' ) );
 
 if( $f_limit_bug_notes < 1 ) $f_limit_bug_notes = 1;
 if( $f_day_count < 1 ) $f_day_count = 1;
@@ -34,6 +35,9 @@ if( plugin_config_get( 'limit_bug_notes' ) != $f_limit_bug_notes )
 
 if( plugin_config_get( 'day_count' ) != $f_day_count )
 	plugin_config_set( 'day_count', $f_day_count );
+
+if( plugin_config_get( 'cron_user' ) != $f_cron_user )
+	plugin_config_set( 'cron_user', $f_cron_user );
 
 form_security_purge( 'plugin_Motives_config_edit' );
 

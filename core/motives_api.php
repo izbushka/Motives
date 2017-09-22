@@ -372,3 +372,22 @@ function motives_department_get_users($department_id) {
     }
     return $t_rows;
 }
+
+function motives_department_get_chiefs() {
+    static $chiefs;
+    if (!empty($chiefs)) return $chiefs;
+    
+    $t_revision_table = plugin_table('user_departments', 'Motives');
+
+    $t_query = "SELECT *, group_concat('', department_id) as `department_id` FROM mantis_plugin_Motives_user_departments_table WHERE role = 'chief' group by user_id;";
+    $t_result = db_query($t_query);
+
+    if (db_num_rows($t_result) < 1) {
+        return null;
+    }
+    $chiefs = array();
+    while ($t_row = db_fetch_array($t_result)) {
+        $chiefs[$t_row['user_id']] = $t_row;
+    }
+    return $chiefs;
+}

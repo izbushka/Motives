@@ -57,6 +57,15 @@ print_manage_menu();
                                                           value="<?php echo(plugin_config_get( 'day_count' )) ?>"/></label>
                                         </td>
                                     </tr>
+                                    <tr <?php echo helper_alternate_class() ?>>
+                                        <td class="category">
+                                            <?php echo plugin_lang_get( 'cron_auth_user' ) ?>
+                                        </td>
+                                        <td class="center" colspan="2">
+                                            <label><input type="text" name="cron_user" class="input-sm"
+                                                          value="<?php echo(plugin_config_get( 'cron_user' )) ?>"/></label>
+                                        </td>
+                                    </tr>
                                 </table>
                             </div>
                         </div>

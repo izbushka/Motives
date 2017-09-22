@@ -65,3 +65,35 @@ hr.motives-hr {
     background: #dadada;
     padding: 0 5px;
 }
+
+.t_center {
+    text-align: center;
+}
+.bonus_fine th {
+    text-align: center;
+    background: #eee;
+    color: #707070;
+}
+.bonus_fine th.b {
+    color: black;
+}
+.bonus_fine .left {
+    text-align: left;
+}
+.bonus_fine .bonus,
+.bonus_fine .total,
+.bonus_fine .fine {
+    text-align: center;
+    background: #ffa1a1;
+}
+.bonus_fine .bonus {
+    background: #cfffcf;
+}
+.bonus_fine .total {
+    background: #f7ffa1;
+}
+.bonus_fine tbody tr:hover td,
+.bonus_fine tbody tr:hover th {
+    border-bottom: 1px solid black;
+    opacity: 0.8;
+}
