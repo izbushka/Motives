@@ -24,6 +24,7 @@
 /**
  * requires MantisPlugin.class.php
  */
+define( 'FILTER_PROPERTY_DEPARTMENT', 'department_id' );
 require_once(config_get( 'class_path' ) . 'MantisPlugin.class.php');
 
 /**
