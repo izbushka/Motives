@@ -379,7 +379,7 @@ function motives_department_get_chiefs() {
     
     $t_revision_table = plugin_table('user_departments', 'Motives');
 
-    $t_query = "SELECT *, group_concat('', department_id) as `department_id` FROM mantis_plugin_Motives_user_departments_table WHERE role = 'chief' group by user_id;";
+    $t_query = "SELECT *, group_concat('', department_id) as `department_id` FROM $t_revision_table WHERE role = 'chief' group by user_id;";
     $t_result = db_query($t_query);
 
     if (db_num_rows($t_result) < 1) {
@@ -390,4 +390,43 @@ function motives_department_get_chiefs() {
         $chiefs[$t_row['user_id']] = $t_row;
     }
     return $chiefs;
+}
+
+function motives_category_bonus_get($p_project_id, $p_category_id) {
+    $t_category_bonus_table = plugin_table('category_bonus', 'Motives');
+
+    $t_query = "SELECT `amount` FROM $t_category_bonus_table WHERE `category_id` = ". db_param() . " AND `project_id` = " . db_param() . " LIMIT 1";
+    $t_result = db_query($t_query, [$p_category_id, $p_project_id]);
+    if (db_num_rows($t_result) < 1) {
+        return 0;
+    }
+    return current(db_fetch_array($t_result));
+}
+
+function motives_category_bonus_set($p_project_id, $p_categories) {
+    $t_update_table = plugin_table('category_bonus', 'Motives');
+    $t_query = "DELETE FROM $t_update_table WHERE `project_id` = " . db_param();
+    db_query($t_query, [$p_project_id]);
+
+    $t_query = "
+        INSERT INTO $t_update_table (`project_id`, `category_id`, `amount`,  `created_at`, `updated_at`)
+        VALUES (" . db_param() . "," . db_param() . "," . db_param() . ", now(), now())
+    ";
+    foreach ($p_categories as $category_id => $amount) {
+        db_query($t_query, [$p_project_id, $category_id, $amount]);
+    }
+}
+
+function motives_is_bug_has_bonus_by_user($p_user_id, $p_bug_id) {
+    $t_bonus_table = plugin_table('bonus', 'Motives');
+
+    $t_query = "SELECT * FROM $t_bonus_table WHERE `bug_id` = " . db_param() . " AND `reporter_id` = " . db_param() . ' LIMIT 1';
+    $t_result = db_query($t_query, [$p_bug_id, $p_user_id]);
+
+    return (db_num_rows($t_result) > 0) ;
+}
+
+function myDebug($line) {
+    $line = json_decode(json_encode($line), true);
+    file_put_contents(__DIR__.'/mantis.log', date('Y-m-d H:i:s') . ": " . print_r($line, true) . "\n", FILE_APPEND);
 }

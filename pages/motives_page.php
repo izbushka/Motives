@@ -245,7 +245,7 @@ extract($data);
     </div>
 <?php
 
-if (!empty($f_note_user_id) || !empty(!$f_bonus_user_id) || !empty($f_department)) {
+if (!empty($f_note_user_id) || !empty($f_bonus_user_id) || !empty($f_department)) {
     echo motives_get_related_notes_html($data);
 }
 

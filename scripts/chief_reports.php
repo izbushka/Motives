@@ -18,7 +18,7 @@ require_once($t_core_path . 'helper_api.php');
 require_once(__DIR__ . '/../core/motives_api.php');
 require_once(__DIR__ . '/../core/page_api.php');
 
-$css = '<style>' . file_get_contents(__DIR__ . '/../files/motives.css') . '<style>';
+$css = '<style>' .  file_get_contents(__DIR__ . '/../files/motives.css') . '<style>';
 
 plugin_push_current('Motives');
 
@@ -44,11 +44,14 @@ foreach ($chiefs as $id => $chief) {
         // get report data
         $data = get_page_data($t_project_ids, $date_from->format('Y-m-d'), $date_to->format('Y-m-d'), 0, 0, 0, $f_department);
         $body = [];
-        $body[] = '<html><head>' . $css . '</head><body>';
+        $body[] = '<html><head>' . $css .'</head><body>';
         $body[] = '<h3>' . $departments[$f_department]['name'] . '</h3>';
         $body[] = motives_get_totals_html($data, $date_from, $date_to, $date_from);
         $body[] = motives_get_related_notes_html($data, true);
         $subject = plugin_lang_get('title') . ': ' . $departments[$f_department]['name'] . ' ' . $date_from->format('Y-m-d');
         motives_email_send($id, $subject, implode('', $body));
     }
+    die;
+    //extract($data);
+    //auth_logout();
 }
