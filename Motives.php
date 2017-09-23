@@ -42,12 +42,12 @@ class MotivesPlugin extends MantisPlugin
 		$this->description = plugin_lang_get( 'description' );
 		$this->page        = 'config';
 
-		$this->version  = '1.1';
+		$this->version  = '2.2';
 		$this->requires = array( 'MantisCore' => '2.0.0', );
 
-		$this->author  = 'Sergey Marchenko';
-		$this->contact = 'sergey@mzsl.ru';
-		$this->url     = 'http://zetabyte.ru';
+		$this->author  = 'Oleg Muraviov';
+		$this->contact = 'dev@xvv.be';
+		$this->url     = 'https://github.com/izbushka/Motives.git';
 	}
 
 	/**

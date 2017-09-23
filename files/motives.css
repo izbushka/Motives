@@ -69,6 +69,14 @@ hr.motives-hr {
 .t_center {
     text-align: center;
 }
+.bonus_fine {
+    /*for email*/
+    min-width: 70%;
+}
+.bonus_fine td,
+.bonus_fine th {
+    border: 1px solid #ddd;
+}
 .bonus_fine th {
     text-align: center;
     background: #eee;
@@ -84,16 +92,28 @@ hr.motives-hr {
 .bonus_fine .total,
 .bonus_fine .fine {
     text-align: center;
-    background: #ffa1a1;
+    background: #ffbbbb;;
 }
 .bonus_fine .bonus {
     background: #cfffcf;
 }
 .bonus_fine .total {
-    background: #f7ffa1;
+    background: #e0f0ff;
 }
 .bonus_fine tbody tr:hover td,
 .bonus_fine tbody tr:hover th {
     border-bottom: 1px solid black;
     opacity: 0.8;
+}
+
+span.note_fine,
+span.note_bonus {
+    background:  #ffbbbb;
+    padding: 1px 3px;
+    border: 1px solid;
+    border-radius: 5px;
+    font-weight: bold;
+}
+span.note_bonus {
+    background: #cfffcf;
 }

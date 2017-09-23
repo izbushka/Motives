@@ -28,7 +28,7 @@ require_api('bug_api.php');
 require_api('bugnote_api.php');
 require_api('icon_api.php');
 require_once('motives_api.php');
-require_once('page.lib.php');
+require_once('page_api.php');
 
 if (!access_has_global_level(plugin_config_get('view_report_threshold'))) {
     access_denied();
@@ -235,166 +235,18 @@ extract($data);
             </div>
             <div class="widget-body">
                 <div class="widget-main">
-                    <b><?php echo "$t_from - $t_to" ?></b><br>
-                    <?php if (empty($t_user_bonuses_total)) {
-                        echo plugin_lang_get('empty_set');
-                    } else { ?>
-                        <?php echo plugin_lang_get('total_issues') ?>: <?php echo $t_total_issues ?><br/>
-                        <?php echo plugin_lang_get('total_notes') ?>: <?php echo $t_total_notes ?><br/>
-                        <?php echo plugin_lang_get('total_amount_bonuses') ?>: <?php echo $t_total_bonuses ?><br/>
-                        <?php echo plugin_lang_get('total_amount_fines') ?>: <?php echo $t_total_fines ?><br/>
-                        <?php
-                        if (!empty($t_user_bonuses_total)) { ?>
-                            <table class="table table-bordered table-condensed2 bonus_fine">
-                                <thead>
-                                <tr class="buglist-headers">
-                                    <th rowspan="2"><?php echo lang_get('username') ?></th>
-                                    <th colspan="3" class="t_center"><?php echo $datetime_from->format('Y-m-d') . " - " . $datetime_to->format('Y-m-d') ?></th>
-                                    <th colspan="3" class="t_center"><?php echo $datetime_month->format('Y-m-d') . " - " . $datetime_to->format('Y-m-d') ?></th>
-                                </tr>
-                                <tr>
-                                    <th><?php echo plugin_lang_get('bonus') ?></th>
-                                    <th><?php echo plugin_lang_get('fine') ?></th>
-                                    <th><?php echo plugin_lang_get('balance') ?></th>
-                                    <th><?php echo plugin_lang_get('bonus') ?></th>
-                                    <th><?php echo plugin_lang_get('fine') ?></th>
-                                    <th><?php echo plugin_lang_get('balance') ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                            <?php foreach ($t_user_bonuses_total as $t_user_id => $bonus) {
-                                $fine = $t_user_fines_total[$t_user_id];
-                                ?>
-                                <tr>
-                                    <th class="left b"><?php echo user_get_name($t_user_id) ?></th>
-                                    <td class="bonus"><?php echo motives_format_amount($bonus['period']) ?></td>
-                                    <td class="fine"><?php echo motives_format_amount($fine['period']) ?></td>
-                                    <td class="total"><?php echo motives_format_amount($fine['period'] + $bonus['period']) ?></td>
-                                    <td class="bonus"><?php echo motives_format_amount($bonus['month']) ?></td>
-                                    <td class="fine"><?php echo motives_format_amount($fine['month']) ?></td>
-                                    <td class="total"><?php echo motives_format_amount($fine['month'] + $bonus['month']) ?></td>
-                                </tr>
-                            <?php } ?>
-                                </tbody>
-                            </table>
-                        <?php } ?>
-
-                        <?php if (!empty($t_user_bonuses)) { ?>
-                        <span><u><?php echo plugin_lang_get('total_bonuses_user') ?></u></span>
-                        <table class="table table-bordered table-condensed2 bonus_fine">
-                            <?php foreach ($t_user_bonuses as $t_user_id => $t_user_projects) { ?>
-                                <tr>
-                                    <th class="left b"><?php echo user_get_name($t_user_id) ?></th>
-                                    <th><?php echo plugin_lang_get('bonus') ?></th>
-                                    <th><?php echo plugin_lang_get('fine') ?></th>
-                                    <th><?php echo plugin_lang_get('balance') ?></th>
-                                </tr>
-                                    <?php foreach ($t_user_projects as $t_user_project => $t_user_categories) {
-                                        foreach ($t_user_categories as $t_user_cat => $bonus) {
-                                            $fine = $t_user_fines[$t_user_id][$t_user_project][$t_user_cat] ?>
-                                            <tr>
-                                                <td><?php echo project_get_name($t_user_project) . '/' . category_get_name($t_user_cat) ?></th>
-                                                <td class="bonus"><?php echo motives_format_amount($bonus) ?></td>
-                                                <td class="fine"><?php echo motives_format_amount($fine) ?></td>
-                                                <td class="total"><?php echo motives_format_amount($fine + $bonus) ?></td>
-                                            </tr>
-                                    <?php }
-                                    } ?>
-                                </tr>
-                            <?php } ?>
-                        </table>
-                        <?php } ?>
-                    <?php } ?>
+                    <?php
+                    // Get totals tables
+                    echo motives_get_totals_html($data, $datetime_from, $datetime_to, $datetime_month);
+                    ?>
                 </div>
             </div>
         </div>
     </div>
 <?php
 
-
-foreach ($t_project_bugs as $t_project_id => $t_project_data) {
-    foreach ($t_category_bugs[$t_project_id] as $t_bugnote_category_id => $t_category_bugs_array) {
-        $t_bug_note_size = motives_count_bugnotes($t_category_bugs_array);
-        $t_project_name_link = '';
-        $t_project_html = '';
-
-        if ($t_bug_note_size == 0) continue;
-
-        $t_project_name = project_get_field($t_project_id, 'name');
-        $t_category_title = category_get_name($t_bugnote_category_id);
-        if ($t_use_javascript && $t_project_ids_size > 1) {
-            $t_project_name_link = '<span style="cursor:pointer;" class="motives-project-link" data-project="' . $t_project_id . '">' . $t_project_name . '/' . $t_category_title . '</span>';
-        } else {
-            $t_project_name_link = $t_project_name . '/' . $t_category_title;
-        }
-
-        $t_bugs = $t_category_bugs_array;
-        $t_issue_size = count($t_category_bugs);
-        $t_issue_size_html = '<span title="' . plugin_lang_get('issues') . '">' . $t_issue_size . '</span>';
-        $t_bugnote_size_html = '<span title="' . plugin_lang_get('notes') . '">' . $t_bug_note_size . '</span>';
-
-        echo '<div class="col-md-12 col-xs-12 motives-project">',
-        '<div class="widget-box widget-color-blue2">',
-        '<div class="widget-header widget-header-small">',
-            '<h4 class="widget-title"><i class="ace-icon fa fa-columns"></i>' . $t_project_name_link . '<span class="badge"> ' . $t_issue_size_html . '/' . $t_bugnote_size_html . '</span></h4>',
-        '<div class="widget-toolbar">
-                            <a id="filter-toggle" data-action="collapse" href="#">
-                                <i class="1 ace-icon fa bigger-125 fa-chevron-up"></i>
-                            </a>
-			         </div>',
-        '</div>',
-        '<div class="widget-body"><div class="widget-main no-padding">';
-        foreach ($t_bugs as $t_bug_id => $t_group) {
-            if (!empty($t_group) && !is_empty_group($t_group)) {
-                $t_bug = bug_get($t_bug_id);
-                $t_summary = $t_bug->summary;
-                $t_status_color = get_status_color($t_bug->status, $t_user_id, $t_project_id);
-                $t_date_submitted = date(config_get('complete_date_format'), $t_bug->date_submitted);
-                $t_background_color = 'background-color: ' . $t_status_color;
-
-                echo '<table cellspacing="0" class="table motives-table"><tbody>', '<tr><td class="news-heading-public motives-center" width="65px" style="' . $t_background_color . '">';
-                print_bug_link($t_bug_id, true);
-                echo '<br/>';
-
-                if (!bug_is_readonly($t_bug_id) && access_has_bug_level($t_update_bug_threshold, $t_bug_id)) {
-                    echo '<a href="' . string_get_bug_update_url($t_bug_id) . '">',
-                        '<i class="fa fa-pencil bigger-130 padding-2 grey" title="' . lang_get('update_bug_button') . '"></i>',
-                    '</a>';
-                }
-
-                if (ON == $t_show_priority_text) {
-                    print_formatted_priority_string($t_bug);
-                } else {
-                    print_status_icon($t_bug->priority);
-                }
-
-                echo '</td><td class="news-heading-public" style="' . $t_background_color . '"><span class="bold">' . $t_summary . '</span> - <span class="italic-small">' . $t_date_submitted . '</span>', '</td></tr>';
-                foreach ($t_group as $t_bugnote) {
-
-                    $t_date_submitted = format_date_submitted($t_bugnote['date_submitted']);
-                    $t_user_id = VS_PRIVATE == $t_bugnote['view_state'] ? null : $t_bugnote['reporter_id'];
-                    $t_user_name = $t_user_id != null ? user_get_name($t_user_id) : lang_get('private');
-                    $t_user_link = $t_user_id != null ? '<a href="view_user_page.php?id=' . $t_user_id . '">' . $t_user_name . '</a>' : $t_user_name;
-                    $t_bonus_user_name = !empty($t_bugnote['bonus_user_id']) ? user_get_name($t_bugnote['bonus_user_id']) : lang_get('private');
-                    $t_bonus_user_link = !empty($t_bugnote['bonus_user_id']) ? '<a href="view_user_page.php?id=' . $t_bugnote['bonus_user_id'] . '">' . $t_bonus_user_name . '</a>' : $t_bonus_user_name;
-                    $t_note = string_display_links(trim($t_bugnote['note']));
-                    $t_bugnote_link = string_get_bugnote_view_link2($t_bugnote['bug_id'], $t_bugnote['id'], $t_user_id);
-                    $t_amount = motives_format_amount($t_bugnote['amount']);
-                    if (!empty($t_note)) {
-                        echo '<tr><td align="center" style="vertical-align: top; text-align: center;"><div class="motives-date">', $t_date_submitted, '</div>', '';
-                        if ($t_show_avatar && !empty($t_user_id)) print_avatar($t_user_id, 60);
-                        echo '</td>';
-                        echo '<td style="vertical-align: top;"><div class="motives-item">',
-                        '<span class="bold">', $t_user_link, '</span> (', $t_bugnote_link, ') - ', $t_bonus_user_link, ' ', $t_amount, '</div>',
-                        '<div class="motives-note">', $t_note, '</div>', '</div></td></tr>';
-                    }
-                }
-
-                echo '</table>';
-            }
-        }
-        echo '</div></div></div></div>';
-    }
+if (!empty($f_note_user_id) || !empty(!$f_bonus_user_id) || !empty($f_department)) {
+    echo motives_get_related_notes_html($data);
 }
 
 layout_page_end();
