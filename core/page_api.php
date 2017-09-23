@@ -544,7 +544,7 @@ function motives_get_related_notes_html(&$data, $forEmail = false) {
                             $html[] = "
                                 <tr>
                                     <td align='center' style='vertical-align: top; text-align: center;'>
-                                        <div class='motives-date'>' . $t_date_submitted . '</div>
+                                        <div class='motives-date'>$t_date_submitted</div>
                                     </td>
                                     <td style='vertical-align: top;'>
                                         <div class='motives-item'>
