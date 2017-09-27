@@ -83,6 +83,7 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
     $c_bonus_user_id = empty($p_bonus_user_id) ? 0 : intval($p_bonus_user_id, 10);
     $c_category_id = empty($p_category_id) || $p_category_id == -1 ? 0 : intval($p_category_id, 10);
     $c_department = empty($p_department) || $p_department == -1 ? 0 : intval($p_department, 10);
+    $c_current_user = auth_get_current_user_id();
 
     if ($c_to === false || $c_from === false) {
         error_parameters(array($p_date_from, $p_date_to));
@@ -107,7 +108,12 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
                     LEFT JOIN $t_bug_table bt ON bt.id = m.bug_id
                     LEFT JOIN $t_bugnote_table b ON b.id = m.bugnote_id
                     LEFT JOIN $t_bugnote_text_table t ON b.bugnote_text_id = t.id
-                    LEFT JOIN $t_user_departments_table d ON m.user_id = d.user_id
+                    INNER JOIN (
+                        SELECT DISTINCT `user_id` 
+                        FROM $t_user_departments_table WHERE `user_id` = '$c_current_user' OR (1  " .
+                        (empty($all_departments) ? ' AND department_id IN (' . implode(',', $my_departments) . ')' : '') .
+                        (!empty($p_department) && in_array($p_department, $my_departments) ? ' AND department_id = ' . $c_department : '') .
+                    ")) d ON m.user_id = d.user_id
                     WHERE 	bt.project_id=" . db_param() . " AND
                     		b.date_submitted >= $c_from AND b.date_submitted <= $c_to AND
                     		m.bugnote_id IS NOT NULL AND
@@ -116,10 +122,7 @@ function motives_get_latest_bugnotes($p_project_id, $p_date_from, $p_date_to, $p
         (!empty($c_user_id) ? ' AND b.reporter_id = ' . $c_user_id : '') .
         (!empty($c_bonus_user_id) ? ' AND m.user_id = ' . $c_bonus_user_id : '') .
         (!empty($c_category_id) ? ' AND bt.category_id = ' . $c_category_id : '') .
-        (empty($all_departments) ? ' AND d.department_id IN (' . implode(',', $my_departments) . ')' : '') .
-        (!empty($p_department) && in_array($p_department, $my_departments) ? ' AND d.department_id = ' . $c_department : '') .
-
-        ' ORDER BY b.id DESC LIMIT ' . $p_limit;
+        ' ORDER BY b.`id` DESC LIMIT ' . $p_limit;
 
     $t_bugnotes = array();
 
@@ -424,6 +427,16 @@ function motives_is_bug_has_bonus_by_user($p_user_id, $p_bug_id) {
     $t_result = db_query($t_query, [$p_bug_id, $p_user_id]);
 
     return (db_num_rows($t_result) > 0) ;
+}
+
+function motives_is_allowed_to_edit($note_timestamp) {
+    $bonus_date = new DateTime("@$note_timestamp");
+    if ((new DateTime())->format('d') > 15) {
+        $threshold = new DateTime('first day of this month 00:00');
+    } else {
+        $threshold = new DateTime('first day of previous month 00:00');
+    }
+    return $bonus_date >= $threshold;
 }
 
 function myDebug($line) {

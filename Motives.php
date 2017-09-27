@@ -41,11 +41,11 @@ class MotivesPlugin extends MantisPlugin {
         $this->description = plugin_lang_get('description');
         $this->page = 'config';
 
-        $this->version = '2.3';
+        $this->version = '2.4';
         $this->requires = array('MantisCore' => '2.0.0',);
 
         $this->author = 'Oleg Muraviov';
-        $this->contact = 'dev@xvv.be';
+        $this->contact = 'mirage@izbushka.kiev.ua';
         $this->url = 'https://github.com/izbushka/Motives.git';
     }
 
@@ -63,20 +63,7 @@ class MotivesPlugin extends MantisPlugin {
                        'EVENT_BUGNOTE_EDIT'        => 'edit_note',
                        'EVENT_BUGNOTE_DELETED'     => 'delete_note',
                        'EVENT_UPDATE_BUG'          => 'on_issue_resolve',
-            //'EVENT_MANAGE_PROJECT_PAGE' => 'edit_project_form',
-
-            //'EVENT_MANAGE_OVERVIEW_INFO' => 'edit_project_form',
-            //'EVENT_MANAGE_PROJECT_CREATE_FORM' => 'edit_project_form',
-            //'EVENT_MANAGE_PROJECT_CREATE' => 'edit_project_form',
-            //'EVENT_MANAGE_PROJECT_UPDATE_FORM' => 'edit_project_form',
-            //'EVENT_MANAGE_PROJECT_UPDATE' => 'edit_project_form',
-            //'EVENT_MANAGE_PROJECT_DELETE' => 'edit_project_form',
                        'EVENT_MANAGE_PROJECT_PAGE' => 'edit_project_form',
-            //'EVENT_MANAGE_VERSION_CREATE' => 'edit_project_form',
-            //'EVENT_MANAGE_VERSION_UPDATE_FORM' => 'edit_project_form',
-            //'EVENT_MANAGE_VERSION_UPDATE' => 'edit_project_form',
-            //'EVENT_MANAGE_VERSION_DELETE' => 'edit_project_form',
-
         );
 
         return $hooks;
@@ -167,14 +154,15 @@ class MotivesPlugin extends MantisPlugin {
         $t_update = motives_get($p_bugnote_id);
         $t_user_id = $t_update != null ? (int)$t_update['user_id'] : NO_USER;
         $t_amount = $t_update != null ? (int)$t_update['amount'] : 0;
-
+        $t_bugnote = bugnote_get($p_bugnote_id);
+        $readonly = !(motives_is_allowed_to_edit($t_bugnote->date_submitted));
         echo '<tr ', helper_alternate_class(), '><td class="category">', plugin_lang_get('bonuses_fines'),
-            '</td><td><select name="plugin_motives_user"><option value="' . META_FILTER_ANY . '">[' . plugin_lang_get('none') . ']</option>';
+            '</td><td><select ' . (!$readonly ?: 'disabled' ) . ' name="plugin_motives_user"><option value="' . META_FILTER_ANY . '">[' . plugin_lang_get('none') . ']</option>';
 
         print_note_option_list($t_user_id);
 
         echo '</select> ',
-        plugin_lang_get('amount'), '<input name="plugin_motives_amount" pattern="^(-)?[0-9]+$" title="', plugin_lang_get('error_numbers')
+        plugin_lang_get('amount'), '<input ' . (!$readonly ?: 'readonly' ) . ' name="plugin_motives_amount" pattern="^(-)?[0-9]+$" title="', plugin_lang_get('error_numbers')
         , '" value="', $t_amount, '" /></td></tr>';
     }
 
@@ -213,16 +201,19 @@ class MotivesPlugin extends MantisPlugin {
         $f_user_id = gpc_get_int('plugin_motives_user', 0);
 
         if ($f_user_id > 0) {
-            $t_reporter_id = auth_get_current_user_id();
             $t_old = motives_get($p_bug_id);
-            motives_update($p_bug_id, $p_bugnote_id, $t_reporter_id, $f_user_id, $f_amount);
-            motives_revision_add($p_bug_id, $p_bugnote_id, $t_reporter_id, $f_user_id, $f_amount);
-            $t_old_value = '';
-            $t_new_value = user_get_name($f_user_id) . ': ' . motives_format_amount($f_amount);
-            if (!empty($t_old)) {
-                $t_old_value = user_get_name($t_old['user_id']) . ': ' . motives_format_amount($t_old['amount']);
+            $t_bugnote = bugnote_get($p_bugnote_id);
+            if (motives_is_allowed_to_edit($t_bugnote->date_submitted)) {
+                $t_reporter_id = auth_get_current_user_id();
+                motives_update($p_bug_id, $p_bugnote_id, $t_reporter_id, $f_user_id, $f_amount);
+                motives_revision_add($p_bug_id, $p_bugnote_id, $t_reporter_id, $f_user_id, $f_amount);
+                $t_old_value = '';
+                $t_new_value = user_get_name($f_user_id) . ': ' . motives_format_amount($f_amount);
+                if (!empty($t_old)) {
+                    $t_old_value = user_get_name($t_old['user_id']) . ': ' . motives_format_amount($t_old['amount']);
+                }
+                plugin_history_log($p_bug_id, 'bonus_edited', $t_old_value, $t_new_value, null, self::BASE_NAME);
             }
-            plugin_history_log($p_bug_id, 'bonus_edited', $t_old_value, $t_new_value, null, self::BASE_NAME);
         }
     }
 
@@ -306,7 +297,7 @@ class MotivesPlugin extends MantisPlugin {
         return array(
             'view_threshold'        => VIEWER,
             'update_threshold'      => MANAGER,
-            'view_report_threshold' => MANAGER,
+            'view_report_threshold' => VIEWER,
             'day_count'             => 3,
             'show_avatar'           => ON,
             'limit_bug_notes'       => 100000,
@@ -332,7 +323,8 @@ class MotivesPlugin extends MantisPlugin {
             $f_amount = motives_category_bonus_get($p_bug->project_id, $p_bug->category_id);
 
             if ($f_amount != 0 && !motives_is_bug_has_bonus_by_user($t_reporter_id, $p_bug->id)) {
-                $t_bugnote_id = bugnote_add($p_bug->id, 'automatic bonus', '0:00', false, BUGNOTE, '', $t_reporter_id, false);
+                $note_text = plugin_lang_get('automatic_bonus');
+                $t_bugnote_id = bugnote_add($p_bug->id, $note_text, '0:00', false, BUGNOTE, '', $t_reporter_id, false);
                 motives_add($p_bug->id, $t_bugnote_id, $t_reporter_id, $p_bug->handler_id, $f_amount);
                 motives_revision_add($p_bug->id, $t_bugnote_id, $t_reporter_id, $p_bug->handler_id, $f_amount);
             }

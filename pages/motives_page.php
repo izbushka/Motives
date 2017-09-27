@@ -49,6 +49,12 @@ if ($f_note_user_id == -1) $f_note_user_id = auth_get_current_user_id();
 $f_bonus_user_id_arr = gpc_get_int_array('bonus_user_id', array());
 $f_bonus_user_id = empty($f_bonus_user_id_arr) ? NO_USER : $f_bonus_user_id_arr[0];
 
+$is_admin = access_has_global_level(config_get('admin_site_threshold'));
+$is_manager = access_has_global_level(plugin_config_get('update_threshold'));
+if (!$is_admin && !$is_manager) { // Regular user should see his bonuses only
+    $f_bonus_user_id = $t_user_id;
+}
+
 $f_category_id = gpc_get_int('category_id', -1);
 
 $f_project = gpc_get_string('project', '');
@@ -195,17 +201,23 @@ extract($data);
                                     <td class="bold">
                                         <?php
                                         echo plugin_lang_get('bonus_user') . ':&nbsp;';
-                                        $t_filter[FILTER_PROPERTY_NOTE_USER_ID] = $f_bonus_user_id_arr;
-                                        print_filter_note_user_id2('bonus_user_id');
+                                        if (!$is_admin && !$is_manager) {
+                                            echo user_get_name($t_user_id);
+                                        } else {
+                                            $t_filter[FILTER_PROPERTY_NOTE_USER_ID] = $f_bonus_user_id_arr;
+                                            print_filter_note_user_id2('bonus_user_id');
+                                        }
                                         ?>
                                     </td>
                                     <td class="bold">
                                         <?php
-                                        echo lang_get('category') . ':&nbsp;';
-                                        echo '<select ' . helper_get_tab_index() . ' id="category_id" name="category_id" class="input-sm">';
-                                        echo '<option value="-1" ' . check_selected($f_category_id, -1) . '>[' . lang_get('none') . ']</option>';
-                                        print_category_option_list($f_category_id, $t_project_id);
-                                        echo '</select>';
+                                        if ($is_admin || $is_manager) {
+                                            echo lang_get('category') . ':&nbsp;';
+                                            echo '<select ' . helper_get_tab_index() . ' id="category_id" name="category_id" class="input-sm">';
+                                            echo '<option value="-1" ' . check_selected($f_category_id, -1) . '>[' . lang_get('none') . ']</option>';
+                                            print_category_option_list($f_category_id, $t_project_id);
+                                            echo '</select>';
+                                        }
                                         ?>
                                     </td>
                                 </tr>

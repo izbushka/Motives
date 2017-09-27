@@ -29,7 +29,7 @@ require_api('bugnote_api.php');
 require_api('icon_api.php');
 require_once('motives_api.php');
 
-if (!access_has_global_level(plugin_config_get('view_report_threshold'))) {
+if (!access_has_global_level(plugin_config_get('update_threshold'))) {
     access_denied();
 }
 $is_admin = access_has_global_level(config_get('admin_site_threshold'));

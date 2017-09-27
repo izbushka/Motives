@@ -291,7 +291,7 @@ function motives_sendmail(EmailData $p_email_data) {
     $t_mail->From = config_get('from_email');
     $t_mail->Sender = config_get('return_path_email');
     $t_mail->FromName = config_get('from_name');
-    $t_mail->AddCustomHeader('Auto-Submitted:auto-generated');
+    $t_mail->AddCustomHeader('Auto-Submitted: auto-generated');
     $t_mail->AddCustomHeader('X-Auto-Response-Suppress: All');
 
     # Setup new line and encoding to avoid extra new lines with some smtp gateways like sendgrid.net
@@ -321,7 +321,8 @@ function motives_sendmail(EmailData $p_email_data) {
     }
 
     $t_mail->Subject = $t_subject;
-    $t_mail->Body = make_lf_crlf($t_message);
+    $t_mail->msgHTML($t_message);
+    $t_mail->AltBody = 'This message available only in HTML';
 
     if (isset($t_email_data->metadata['headers']) && is_array($t_email_data->metadata['headers'])) {
         foreach ($t_email_data->metadata['headers'] as $t_key => $t_value) {
@@ -537,7 +538,7 @@ function motives_get_related_notes_html(&$data, $forEmail = false) {
                         $t_bonus_user_name = !empty($t_bugnote['bonus_user_id']) ? user_get_name($t_bugnote['bonus_user_id']) : lang_get('private');
                         $t_bonus_user_link = !empty($t_bugnote['bonus_user_id']) && !$forEmail ? '<a href="view_user_page.php?id=' . $t_bugnote['bonus_user_id'] . '">' . $t_bonus_user_name . '</a>' : $t_bonus_user_name;
                         $t_note = string_display_links(trim($t_bugnote['note']));
-                        $t_bugnote_link = $forEmail ? '' : string_get_bugnote_view_link2($t_bugnote['bug_id'], $t_bugnote['id'], $t_user_id);
+                        $t_bugnote_link = $forEmail ? '' : '('. string_get_bugnote_view_link2($t_bugnote['bug_id'], $t_bugnote['id'], $t_user_id) . ')';
                         $t_amount = motives_format_amount($t_bugnote['amount']);
                         $amount_class = $t_bugnote['amount'] > 0 ? 'note_bonus' : 'note_fine';
                         if (!empty($t_note)) {
@@ -549,7 +550,7 @@ function motives_get_related_notes_html(&$data, $forEmail = false) {
                                     <td style='vertical-align: top;'>
                                         <div class='motives-item'>
                                             <span class='bold'>$t_user_link</span>
-                                            ($t_bugnote_link) - $t_bonus_user_link <span class='$amount_class'>$t_amount</span>
+                                            $t_bugnote_link - $t_bonus_user_link <span class='$amount_class'>$t_amount</span>
                                         </div>
                                         <div class='motives-note'>$t_note</div>
                                     </td>

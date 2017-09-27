@@ -74,3 +74,4 @@ $s_plugin_Motives_empty_set = 'No records found';
 $s_plugin_Motives_bonus = 'Bonus';
 $s_plugin_Motives_fine = 'Fine';
 $s_plugin_Motives_balance = 'Balance';
+$s_plugin_Motives_automatic_bonus = 'Automatic bonus/fine';

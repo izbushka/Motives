@@ -72,3 +72,7 @@ $s_plugin_Motives_sum_bonuses_user = 'Сумма бонусов по польз�
 $s_plugin_Motives_last_month = 'За последний месяц';
 $s_plugin_Motives_cron_auth_user = 'Mantis-пользователь для отправки уведомлений (admin)';
 $s_plugin_Motives_empty_set = 'Записей не найдено';
+$s_plugin_Motives_bonus = 'Бонус';
+$s_plugin_Motives_fine = 'Штраф';
+$s_plugin_Motives_balance = 'Баланс';
+$s_plugin_Motives_automatic_bonus = 'Automatic bonus/fine';

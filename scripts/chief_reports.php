@@ -18,14 +18,12 @@ require_once($t_core_path . 'helper_api.php');
 require_once(__DIR__ . '/../core/motives_api.php');
 require_once(__DIR__ . '/../core/page_api.php');
 
-$css = '<style>' .  file_get_contents(__DIR__ . '/../files/motives.css') . '<style>';
+$css = '<style>' .  file_get_contents(__DIR__ . '/../files/motives.css') . '</style>';
 
 plugin_push_current('Motives');
 
 $date_from = new DateTime('yesterday');
-$date_to = new DateTime();
-$date_from = new DateTime('2017-09-15');
-$date_to = new DateTime('2017-09-15');
+$date_to = new DateTime('yesterday');
 
 $chiefs = motives_department_get_chiefs();
 foreach ($chiefs as $id => $chief) {
@@ -46,12 +44,9 @@ foreach ($chiefs as $id => $chief) {
         $body = [];
         $body[] = '<html><head>' . $css .'</head><body>';
         $body[] = '<h3>' . $departments[$f_department]['name'] . '</h3>';
-        $body[] = motives_get_totals_html($data, $date_from, $date_to, $date_from);
+        $body[] = motives_get_totals_html($data, $date_from, $date_to, new DateTime('first day of this month'));
         $body[] = motives_get_related_notes_html($data, true);
         $subject = plugin_lang_get('title') . ': ' . $departments[$f_department]['name'] . ' ' . $date_from->format('Y-m-d');
         motives_email_send($id, $subject, implode('', $body));
     }
-    die;
-    //extract($data);
-    //auth_logout();
 }
