@@ -76,3 +76,5 @@ $s_plugin_Motives_bonus = 'Бонус';
 $s_plugin_Motives_fine = 'Штраф';
 $s_plugin_Motives_balance = 'Баланс';
 $s_plugin_Motives_automatic_bonus = 'Automatic bonus/fine';
+$s_plugin_Motives_workers_only = 'Скрыть начальников';
+$s_plugin_Motives_bugs_projects_differs = 'Бонусы/Штрафы: выбранные задачи из разных проектов';

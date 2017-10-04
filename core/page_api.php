@@ -57,6 +57,15 @@ function print_filter_department($p_name = FILTER_PROPERTY_DEPARTMENT) {
     </select>
     <?php
 }
+/**
+ *  print checkbox workers_only
+ */
+function print_filter_workers_only($p_name = FILTER_WORKERS_ONLY) {
+    global $t_select_modifier, $t_filter;
+    ?>
+    <input type="checkbox" <?php echo $t_filter[$p_name] ? 'checked' : ''; ?> value="1" name="<?php echo $p_name; ?>">
+    <?php
+}
 
 function string_get_bugnote_view_link2($p_bug_id, $p_bugnote_id, $p_user_id = null, $p_detail_info = true, $p_fqdn = false) {
     $t_bug_id = (int)$p_bug_id;
@@ -105,7 +114,7 @@ function motives_count_bugnotes($p_group) {
 }
 
 
-function get_page_data($t_project_ids, $t_from, $t_to, $f_note_user_id, $f_bonus_user_id, $f_category_id, $f_department) {
+function get_page_data($t_project_ids, $t_from, $t_to, $f_note_user_id, $f_bonus_user_id, $f_category_id, $f_department, $f_workers_only = false) {
 
     $t_limit_bug_notes = (int)plugin_config_get('limit_bug_notes', 1000);
 
@@ -124,7 +133,9 @@ function get_page_data($t_project_ids, $t_from, $t_to, $f_note_user_id, $f_bonus
 
     $t_total = []; // issues and notes counter
 
-    $chiefs = motives_department_get_chiefs();
+    //$chiefs = motives_department_get_chiefs();
+    $supers = motives_get_staff('super', $f_department ?: null);
+    $workers = motives_get_staff('worker', $f_department ?: null);
     $current_user_id = auth_get_current_user_id();
     $is_admin = access_has_global_level(config_get('admin_site_threshold'));
 
@@ -138,8 +149,16 @@ function get_page_data($t_project_ids, $t_from, $t_to, $f_note_user_id, $f_bonus
             $t_bug_category_id = $t_bug_note['category_id'];
             $user_id = $t_bug_note['bonus_user_id'];
             $bug_id = (int)$t_bug_note['bug_id'];
-            // chiefs are not allowed to view other chiefs
-            if (!$is_admin && $user_id != $current_user_id && !empty($chiefs[$user_id])) {
+            // chiefs are not allowed to view supers
+            if (!($is_admin OR !empty($supers[$current_user_id])) && $user_id != $current_user_id && !empty($supers[$user_id])) {
+                continue;
+            }
+            // hide chiefs if only workers asked
+            if ($f_workers_only && empty($workers[$user_id])) {
+                continue;
+            }
+            // hide supers if department selected
+            if (!empty($f_department) && !empty($supers[$user_id])) {
                 continue;
             }
             $is_bonus = !$is_fine = $t_amount < 0;

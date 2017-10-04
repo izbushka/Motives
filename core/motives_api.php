@@ -290,9 +290,9 @@ function motives_department_change($id, $department_name) {
     return;
 }
 
-function motives_department_get() {
+function motives_department_get($renew = false) {
     static $departments;
-    if (!empty($departments)) {
+    if (!empty($departments) && !$renew) {
         return $departments;
     }
     $t_departments = plugin_table('departments', 'Motives');
@@ -304,7 +304,7 @@ function motives_department_get() {
         $current_user = auth_get_current_user_id();
         $t_query = "
             SELECT d.* FROM $t_department_users du
-                INNER JOIN $t_departments d ON d.id = du.department_id AND du.role = 'chief'
+                INNER JOIN $t_departments d ON d.id = du.department_id AND du.role IN ('chief', 'super')
             WHERE du.user_id = '$current_user'";
     }
     $t_result = db_query($t_query);
@@ -320,7 +320,7 @@ function motives_department_get() {
 }
 
 function motives_department_get_selector() {
-
+    print '<script>motives_extend_actiongroup_form();</script>';
 }
 
 function motives_get_users() {
@@ -343,7 +343,7 @@ function motives_get_users() {
     return $t_users;
 }
 
-function motives_department_set_users($department_id, $workers, $chiefs) {
+function motives_department_set_users($department_id, $workers, $chiefs, $supers) {
     $t_update_table = plugin_table('user_departments', 'Motives');
     $t_query = "DELETE FROM $t_update_table WHERE `department_id` = " . db_param();
     db_query($t_query, [$department_id]);
@@ -352,19 +352,44 @@ function motives_department_set_users($department_id, $workers, $chiefs) {
         INSERT INTO $t_update_table (`user_id`, `department_id`, `role`,  `created_at`, `updated_at`)
         VALUES (" . db_param() . "," . db_param() . "," . db_param() . ", now(), now())
     ";
-    foreach (array_unique(array_merge($workers, $chiefs)) as $user) {
-        $role = in_array($user, $chiefs) ? 'chief' : 'worker';
+    foreach (array_unique(array_merge($workers, $chiefs, $supers)) as $user) {
+        $role = in_array($user, $supers)
+            ? 'super'
+            : (in_array($user, $chiefs)
+                ? 'chief'
+                : 'worker'
+            );
         db_query($t_query, [$user, $department_id, $role]);
     }
 }
 
-function motives_department_get_users($department_id) {
+function motives_get_staff($userRoles = null, $department_ids = null) {
     //db_param_push();
     $t_revision_table = plugin_table('user_departments', 'Motives');
-    $t_params = array($department_id);
 
-    $t_query = "SELECT * FROM $t_revision_table WHERE department_id = " . db_param();
-    $t_result = db_query($t_query, $t_params);
+    $where = [1];
+    if (!is_null($department_ids)) {
+        if (!is_array($department_ids)) {
+            $department_ids = [$department_ids];
+        }
+        $where[] = "`department_id` IN (" . implode(',', $department_ids) . ")";
+    }
+
+    if (!is_null($userRoles)) {
+        if (!is_array($userRoles)) {
+            $userRoles = [$userRoles];
+        }
+        array_walk($userRoles, function(&$el) { $el = "'$el'";});
+        $where[] = "`role` IN (" . implode(',', $userRoles) . ")";
+    }
+
+    $t_query = "
+        SELECT *, group_concat('', department_id) as `department_id`, group_concat(DISTINCT(`role`)) as `role`
+        FROM $t_revision_table 
+        WHERE " . implode(' AND ', $where) ." 
+        GROUP BY `user_id`
+    ";
+    $t_result = db_query($t_query);
 
     if (db_num_rows($t_result) < 1) {
         return null;
@@ -376,23 +401,29 @@ function motives_department_get_users($department_id) {
     return $t_rows;
 }
 
+function motives_department_get_users($department_id) {
+    return motives_get_staff(null, $department_id);
+}
+
+function motives_department_get_heads() {
+    static $heads;
+    if (!empty($heads)) return $heads;
+    $heads = motives_get_staff(['chief', 'super']);
+    return $heads;
+}
+
 function motives_department_get_chiefs() {
     static $chiefs;
     if (!empty($chiefs)) return $chiefs;
-    
-    $t_revision_table = plugin_table('user_departments', 'Motives');
-
-    $t_query = "SELECT *, group_concat('', department_id) as `department_id` FROM $t_revision_table WHERE role = 'chief' group by user_id;";
-    $t_result = db_query($t_query);
-
-    if (db_num_rows($t_result) < 1) {
-        return null;
-    }
-    $chiefs = array();
-    while ($t_row = db_fetch_array($t_result)) {
-        $chiefs[$t_row['user_id']] = $t_row;
-    }
+    $chiefs = motives_get_staff(['chief']);
     return $chiefs;
+}
+
+function motives_department_get_supers() {
+    static $supers;
+    if (!empty($supers)) return $supers;
+    $supers = motives_get_staff(['super']);
+    return $supers;
 }
 
 function motives_category_bonus_get($p_project_id, $p_category_id) {

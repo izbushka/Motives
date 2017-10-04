@@ -42,6 +42,8 @@ $t_from_day = date('d:m:Y', strtotime(date('Y-m-d')) - SECONDS_PER_DAY * ($t_day
 
 $t_user_id = auth_get_current_user_id();
 
+$f_workers_only = gpc_get_int('workers_only', 0);
+
 $f_note_user_id_arr = gpc_get_int_array('note_user_id', array());
 $f_note_user_id = empty($f_note_user_id_arr) ? null : $f_note_user_id_arr[0];
 if ($f_note_user_id == -1) $f_note_user_id = auth_get_current_user_id();
@@ -140,7 +142,7 @@ $t_icon_path = config_get('icon_path');
 $t_show_priority_text = config_get('show_priority_text');
 $t_use_javascript = config_get('use_javascript', ON);
 
-$data = get_page_data($t_project_ids, $t_from, $t_to, $f_note_user_id, $f_bonus_user_id, $f_category_id, $f_department);
+$data = get_page_data($t_project_ids, $t_from, $t_to, $f_note_user_id, $f_bonus_user_id, $f_category_id, $f_department, $f_workers_only);
 extract($data);
 
 ?>
@@ -186,9 +188,9 @@ extract($data);
                                         $t_filter['end_year'] = $t_stats_to_y;
                                         print_filter_do_filter_by_date(true, $t_filter);
 
-                                        echo plugin_lang_get('department') . ':&nbsp;';
-                                        $t_filter[FILTER_PROPERTY_DEPARTMENT] = $f_department;
-                                        print_filter_department();
+                                        echo plugin_lang_get('workers_only') . ':&nbsp;';
+                                        $t_filter[FILTER_WORKERS_ONLY] = $f_workers_only;
+                                        print_filter_workers_only();
                                         ?>
                                     </td>
                                     <td class="bold">
@@ -196,6 +198,10 @@ extract($data);
                                         echo plugin_lang_get('reported_user') . ':&nbsp;';
                                         $t_filter[FILTER_PROPERTY_NOTE_USER_ID] = $f_note_user_id_arr;
                                         print_filter_note_user_id2();
+                                        print "<br>";
+                                        echo plugin_lang_get('department') . ':&nbsp;';
+                                        $t_filter[FILTER_PROPERTY_DEPARTMENT] = $f_department;
+                                        print_filter_department();
                                         ?>
                                     </td>
                                     <td class="bold">

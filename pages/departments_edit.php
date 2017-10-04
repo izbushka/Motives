@@ -33,12 +33,16 @@ if (!access_has_global_level(plugin_config_get('update_threshold'))) {
     access_denied();
 }
 $is_admin = access_has_global_level(config_get('admin_site_threshold'));
+$chiefs = motives_department_get_chiefs();
+$supers = motives_department_get_supers();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $department_name = gpc_get_string('department_name', '');
     $department_id = gpc_get_int('department_id');
     $department_workers = gpc_get_int_array('workers', []);
     $department_chiefs = gpc_get_int_array('chiefs', []);
+    $department_supers = gpc_get_int_array('supers', []);
+
 
     if ($is_admin) { // only admin can modify departments
         if ($department_id > 0) {
@@ -47,15 +51,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $department_id = motives_department_add($department_name);
         }
     } else { // don't allow managers to change chiefs. Replacing chiefs by DB data here
+        $department_workers = array_filter($department_workers, function ($worker) use ($chiefs, $supers) { return (!isset($chiefs[$worker]) && !isset($supers[$worker])); });
         $department_chiefs = [];
         foreach (motives_department_get_users($department_id) as $user_id => $user) {
             if ($user['role'] == 'chief') {
                 $department_chiefs[] = $user_id;
+            } elseif ($user['role'] == 'super') {
+                $department_supers[] = $user_id;
             }
         }
     }
 
-    motives_department_set_users($department_id, $department_workers, $department_chiefs);
+    motives_department_set_users($department_id, $department_workers, $department_chiefs, $department_supers);
     print_successful_redirect(plugin_page('departments_page', true));
 } else {
     layout_page_header(plugin_lang_get('title'));
@@ -103,13 +110,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input name="department_id" type="hidden" id="department_id" value="<?php echo $department_id ?>">
                             <h3><?php echo plugin_lang_get('department_members') ?></h3>
                             <?php foreach (motives_get_users() as $user) {
+                                $disabled = !$is_admin && (!empty($chiefs[$user['id']]) || !empty($supers[$user['id']])) ? 'disabled="disabled"' : '';
                                 $checked_worker = !empty($department_users[$user['id']]) ? 'checked' : '';
                                 $checked_chief = $checked_worker && $department_users[$user['id']]['role'] == 'chief' ? 'checked' : '';
+                                $checked_super = $checked_worker && $department_users[$user['id']]['role'] == 'super' ? 'checked' : '';
                                 ?>
                                 <label title="<?php echo $user['realname'] ?>">
-                                    <input type="checkbox" name="workers[]" <?php echo $checked_worker ?> value="<?php echo $user['id'] ?>">
+                                    <input <?php echo $disabled ?> type="checkbox" name="workers[]" <?php echo $checked_worker ?> value="<?php echo $user['id'] ?>">
                                     <?php echo $user['username'] ?>
                                     <?php if ($is_admin) { ?>
+                                    <span><input type="checkbox" name="supers[]" <?php echo $checked_super ?> value="<?php echo $user['id'] ?>"> super</span>
                                     <span><input type="checkbox" name="chiefs[]" <?php echo $checked_chief ?> value="<?php echo $user['id'] ?>"> chief</span>
                                     <?php } ?>
                                 </label>

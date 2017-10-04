@@ -25,6 +25,7 @@
  * requires MantisPlugin.class.php
  */
 define('FILTER_PROPERTY_DEPARTMENT', 'department_id');
+define('FILTER_WORKERS_ONLY', 'workers_only');
 require_once(config_get('class_path') . 'MantisPlugin.class.php');
 
 /**
@@ -41,7 +42,7 @@ class MotivesPlugin extends MantisPlugin {
         $this->description = plugin_lang_get('description');
         $this->page = 'config';
 
-        $this->version = '2.4';
+        $this->version = '2.6';
         $this->requires = array('MantisCore' => '2.0.0',);
 
         $this->author = 'Oleg Muraviov';
@@ -64,6 +65,7 @@ class MotivesPlugin extends MantisPlugin {
                        'EVENT_BUGNOTE_DELETED'     => 'delete_note',
                        'EVENT_UPDATE_BUG'          => 'on_issue_resolve',
                        'EVENT_MANAGE_PROJECT_PAGE' => 'edit_project_form',
+                       'EVENT_LAYOUT_CONTENT_END'  => 'update_actiongroup_form',
         );
 
         return $hooks;
@@ -103,6 +105,7 @@ class MotivesPlugin extends MantisPlugin {
         }
     }
 
+
     /**
      * Generate and cache a dict of TimecardUpdate objects keyed by bugnote ID.
      * @param string $p_event Event name
@@ -134,11 +137,38 @@ class MotivesPlugin extends MantisPlugin {
             return;
         }
         echo '<tr ', helper_alternate_class(), '><td class="category">', plugin_lang_get('bonuses_fines'),
-            '</td><td><select name="plugin_motives_user"><option value="' . META_FILTER_ANY . '">[' . plugin_lang_get('none') . ']</option>';
+            '</td><td><select id="plugin_motives_user" name="plugin_motives_user"><option value="' . META_FILTER_ANY . '">[' . plugin_lang_get('none') . ']</option>';
 
-        print_note_option_list(NO_USER);
+        print_note_option_list(NO_USER, bug_get_field($p_bug_id, 'project_id'));
         echo '</select> ',
         plugin_lang_get('amount'), '<input name="plugin_motives_amount" pattern="^(-)?[0-9]+$" title="', plugin_lang_get('error_numbers'), '" value="0" /></td></tr>';
+    }
+
+    function update_actiongroup_form() {
+        $supportedActions = ['EXT_ADD_NOTE', 'RESOLVE', 'CLOSE'];
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_SERVER['SCRIPT_NAME'] == '/bug_actiongroup_page.php') {
+            $f_bug_arr = gpc_get_int_array('bug_arr', array());
+            $p_action = gpc_get_string('action', '');
+            if (!empty($f_bug_arr) AND in_array($p_action, $supportedActions)) {
+                $t_projects = array();
+                $project_id = null;
+                foreach ($f_bug_arr as $t_bug_id) {
+                    bug_ensure_exists($t_bug_id);
+                    $project_id = bug_get_field($t_bug_id, 'project_id');
+                    $t_projects[] = $project_id;
+                }
+                print "<div id='motives_actiongroup_form'>";
+                if (sizeof(array_unique($t_projects)) == 1) {
+                    $this->add_note_form($p_action, $t_bug_id);
+                } elseif ($project_id) {
+                    if (access_has_project_level(plugin_config_get('update_threshold'), $project_id)) {
+                        print plugin_lang_get('bugs_projects_differs');
+                    }
+                }
+                print "</div>";
+                print '<script>motives_extend_actiongroup_form();</script>';
+            }
+        }
     }
 
     /**
@@ -157,12 +187,12 @@ class MotivesPlugin extends MantisPlugin {
         $t_bugnote = bugnote_get($p_bugnote_id);
         $readonly = !(motives_is_allowed_to_edit($t_bugnote->date_submitted));
         echo '<tr ', helper_alternate_class(), '><td class="category">', plugin_lang_get('bonuses_fines'),
-            '</td><td><select ' . (!$readonly ?: 'disabled' ) . ' name="plugin_motives_user"><option value="' . META_FILTER_ANY . '">[' . plugin_lang_get('none') . ']</option>';
+            '</td><td><select ' . (!$readonly ?: 'disabled') . ' id="plugin_motives_user" name="plugin_motives_user"><option value="' . META_FILTER_ANY . '">[' . plugin_lang_get('none') . ']</option>';
 
         print_note_option_list($t_user_id);
 
         echo '</select> ',
-        plugin_lang_get('amount'), '<input ' . (!$readonly ?: 'readonly' ) . ' name="plugin_motives_amount" pattern="^(-)?[0-9]+$" title="', plugin_lang_get('error_numbers')
+        plugin_lang_get('amount'), '<input ' . (!$readonly ?: 'readonly') . ' name="plugin_motives_amount" pattern="^(-)?[0-9]+$" title="', plugin_lang_get('error_numbers')
         , '" value="', $t_amount, '" /></td></tr>';
     }
 
@@ -368,14 +398,14 @@ class MotivesPlugin extends MantisPlugin {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <input type="hidden" name="project_id" value="' . $p_project_id .'">
-                                        ' . call_user_func(function($categories) {
-                                            $html = [];
-                                            foreach ($categories as $category) {
-                                                $html[] = "<tr><td>{$category['name']}</td><td><input name='categories[{$category['id']}]' value='{$category['bonus']}'></td></tr>";
-                                            }
-                                            return implode('', $html);
-                                        }, $categories) . '
+                                            <input type="hidden" name="project_id" value="' . $p_project_id . '">
+                                        ' . call_user_func(function ($categories) {
+                $html = [];
+                foreach ($categories as $category) {
+                    $html[] = "<tr><td>{$category['name']}</td><td><input name='categories[{$category['id']}]' value='{$category['bonus']}'></td></tr>";
+                }
+                return implode('', $html);
+            }, $categories) . '
                                         </tbody>
                                     </table>
 	                            </div>

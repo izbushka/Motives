@@ -55,10 +55,12 @@ hr.motives-hr {
     z-index: 10000;
 }
 .motives-editor-form label {
-    min-width: 200px;
+    width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     border: 1px solid #dadada;
     padding: 0 0 0 5px;
-    margin-right: 10px;
+    margin: 0px;
 }
 .motives-editor-form label span{
     float: right;
@@ -116,4 +118,12 @@ span.note_bonus {
 }
 span.note_bonus {
     background: #cfffcf;
+}
+
+#motives_actiongroup_form {
+    display: none;
+}
+#action-group-div #motives_actiongroup_form {
+    display: block;
+    padding: 10px;
 }
