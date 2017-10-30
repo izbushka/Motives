@@ -467,7 +467,7 @@ function motives_is_allowed_to_edit($note_timestamp) {
     } else {
         $threshold = new DateTime('first day of previous month 00:00');
     }
-    return $bonus_date >= $threshold;
+    return $bonus_date >= $threshold || access_has_project_level(config_get('admin_site_threshold'));
 }
 
 function myDebug($line) {
